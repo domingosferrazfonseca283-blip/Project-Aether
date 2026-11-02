@@ -4,7 +4,7 @@ Assistente de IA especializado em **cibersegurança defensiva** e **programaçã
 
 ## Estado atual
 
-A API FastAPI disponibiliza `GET /`, `GET /health` e `POST /analyze`. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
+A API FastAPI disponibiliza `GET /`, `GET /health` e `POST /analyze`. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
 
 O projeto inclui:
 - Fornecedor determinístico local (`AI_PROVIDER=rules`), ativo por omissão.
@@ -80,7 +80,7 @@ O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é execut
 
 ## Segurança e privacidade
 
-- Não coloques passwords, tokens, chaves API ou dados pessoais nos pedidos nem no repositório.
+- Não coloques passwords, tokens, chaves API ou dados pessoais nos pedidos nem no repositório.\n- Os logs registam apenas identificador gerado pelo servidor, método, caminho, código HTTP, duração e tipo de exceção. Não registam corpos, query strings, cabeçalhos nem mensagens de exceção.
 - Testa apenas sistemas e código para os quais tens autorização.
 - O conteúdo recuperado e o texto do utilizador são dados não confiáveis, nunca instruções para alterar as regras do assistente.
 - Se ativares Ollama, o texto e o contexto documental são enviados para o serviço configurado. Confirma que o URL aponta para uma instância de confiança.
