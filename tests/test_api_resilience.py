@@ -46,7 +46,7 @@ def test_analyze_falls_back_to_lexical_when_embeddings_fail(monkeypatch):
     )
     assert response.status_code == 200
     assert response.json()["sources"]
-    assert any("Menor" in source["title"] for source in response.json()["sources"])
+    assert any("menor" in source["title"].lower() for source in response.json()["sources"])
 
 
 def test_analyze_returns_503_when_chat_provider_is_unavailable(monkeypatch):
