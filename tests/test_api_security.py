@@ -87,3 +87,16 @@ def test_invalid_api_keys_are_also_rate_limited(monkeypatch):
     assert client.post("/review-code", json={"content": "print('safe')"}, headers=headers).status_code == 401
     limited = client.post("/review-code", json={"content": "print('safe')"}, headers=headers)
     assert limited.status_code == 429
+
+
+def test_rate_limiter_enforces_limit_under_concurrent_requests():
+    from concurrent.futures import ThreadPoolExecutor
+
+    limiter = InMemoryRateLimiter(limit=5, window_seconds=60)
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(
+            lambda _: limiter.allow("shared-client", now=100),
+            range(20),
+        ))
+
+    assert sum(results) == 5
