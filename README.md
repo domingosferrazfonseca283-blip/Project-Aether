@@ -86,6 +86,23 @@ O adaptador usa a API local `/api/chat`, com timeout configurável por `OLLAMA_T
 
 ## Recuperação documental (RAG inicial)
 
-A versão 0.4.0 inclui recuperação lexical local de secções Markdown em `knowledge/`. A API devolve as fontes encontradas em `sources`, incluindo caminho, secção, excerto e indicação de referência. O contexto recuperado é tratado como dado não confiável: não pode alterar as instruções do assistente nem desencadear execução de código.
+A versão 0.5.0 inclui recuperação lexical local de secções Markdown em `knowledge/`. A API devolve as fontes encontradas em `sources`, incluindo caminho, secção, excerto e indicação de referência. O contexto recuperado é tratado como dado não confiável: não pode alterar as instruções do assistente nem desencadear execução de código.
 
 A recuperação é deliberadamente simples (correspondência de termos), não utiliza embeddings nem pesquisa na Internet. As referências externas são apresentadas nos próprios documentos para consulta e validação. Adiciona apenas documentação técnica de fontes reconhecidas e revê-a antes de a integrar.
+
+
+## Embeddings locais opcionais (RAG semântico)
+
+Por omissão, a recuperação é lexical. Para ativar recuperação semântica, inicia o Ollama e disponibiliza um modelo de embeddings como `nomic-embed-text`:
+
+```bash
+# Linux/macOS
+export RAG_PROVIDER=ollama
+export RAG_EMBEDDING_MODEL=nomic-embed-text
+
+# Windows PowerShell
+$env:RAG_PROVIDER="ollama"
+$env:RAG_EMBEDDING_MODEL="nomic-embed-text"
+```
+
+O Aether usa o endpoint local `/api/embed`. Se o serviço estiver indisponível, regressa automaticamente à recuperação lexical. O modelo de embeddings é independente do modelo de chat definido em `OLLAMA_MODEL`. Apenas ficheiros Markdown em `knowledge/` são indexados.
