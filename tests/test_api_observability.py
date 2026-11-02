@@ -19,6 +19,25 @@ def test_response_includes_server_generated_request_id():
     assert request_id != "client-controlled"
 
 
+def test_security_headers_are_present_on_api_responses():
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+    assert response.headers["Permissions-Policy"] == (
+        "camera=(), microphone=(), geolocation=()"
+    )
+
+
+def test_analysis_response_disables_caching():
+    response = client.post("/analyze", json={"content": "texto de teste"})
+
+    assert response.status_code == 200
+    assert response.headers["Cache-Control"] == "no-store"
+
+
 def test_logs_metadata_without_request_content(caplog):
     secret_text = "texto-privado-nao-deve-ser-registado"
     caplog.set_level(logging.INFO, logger="project_aether.api")
@@ -50,3 +69,5 @@ def test_unavailable_provider_logs_safe_error_metadata(monkeypatch, caplog):
     assert "request_completed" in caplog.text
     assert "status_code=503" in caplog.text
     assert "conteúdo confidencial" not in caplog.text
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
