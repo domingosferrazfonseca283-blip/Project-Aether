@@ -25,7 +25,7 @@ app = FastAPI(
 
 @app.middleware("http")
 async def request_observability(request, call_next):
-    """Regista metadados mínimos; nunca regista corpos, query strings ou cabeçalhos."""
+    """Regista metadados mínimos e aplica cabeçalhos HTTP de segurança."""
     request_id = str(uuid4())
     started = perf_counter()
     try:
@@ -42,6 +42,13 @@ async def request_observability(request, call_next):
         raise
 
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.path == "/analyze":
+        response.headers["Cache-Control"] = "no-store"
+
     logger.info(
         "request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
         request_id,
