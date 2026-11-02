@@ -11,7 +11,8 @@ O projeto inclui:
 - Fornecedor opcional Ollama (`AI_PROVIDER=ollama`) para inferência local.
 - RAG sobre documentos Markdown locais em `knowledge/`.
 - Recuperação lexical por omissão e recuperação semântica opcional via embeddings Ollama.
-- Fallback automático para recuperação lexical se o serviço de embeddings falhar ou devolver dados inválidos.
+- Fallback para recuperação lexical se embeddings falharem ou forem inválidos.
+- Validação de configuração no arranque, para evitar opções desconhecidas e timeouts inseguros.
 
 ## Requisitos e instalação
 
@@ -32,7 +33,7 @@ A documentação interativa fica disponível em http://127.0.0.1:8000/docs.
 
 ## Configuração
 
-Sem variáveis adicionais, a aplicação usa regras locais e RAG lexical. Para usar um modelo de chat Ollama, instala e inicia o Ollama localmente e configura:
+Sem variáveis adicionais, a aplicação usa regras locais e RAG lexical. Para usar um modelo de chat Ollama, instala e inicia o Ollama e configura:
 
 ```bash
 # Linux/macOS
@@ -58,9 +59,16 @@ $env:RAG_PROVIDER="ollama"
 $env:RAG_EMBEDDING_MODEL="nomic-embed-text"
 ```
 
-O modelo de chat (`OLLAMA_MODEL`) e o modelo de embeddings (`RAG_EMBEDDING_MODEL`) têm funções distintas. Ambos usam o serviço local indicado por `OLLAMA_BASE_URL` e o timeout configurável por `OLLAMA_TIMEOUT_SECONDS`.
+O modelo de chat (`OLLAMA_MODEL`) e o modelo de embeddings (`RAG_EMBEDDING_MODEL`) têm funções distintas. Ambos usam o serviço indicado por `OLLAMA_BASE_URL` e o timeout configurável por `OLLAMA_TIMEOUT_SECONDS`.
 
-A recuperação semântica envia a consulta e as secções documentais locais para o endpoint Ollama `/api/embed`. Se a chamada falhar ou os vetores forem inválidos, a API regressa à recuperação lexical. A inferência de chat usa `/api/chat`; se esse serviço falhar, a API devolve HTTP 503.
+A configuração é validada no arranque:
+- `AI_PROVIDER`: `rules` ou `ollama`.
+- `RAG_PROVIDER`: `lexical` ou `ollama`.
+- `OLLAMA_BASE_URL`: URL HTTP(S) sem credenciais, query ou fragmento.
+- `OLLAMA_TIMEOUT_SECONDS`: número superior a 0 e até 300 segundos.
+- Os nomes dos modelos não podem estar vazios.
+
+Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de configuração, em vez de selecionar silenciosamente um fornecedor diferente.
 
 ## Endpoints
 
@@ -75,7 +83,7 @@ O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é execut
 - Não coloques passwords, tokens, chaves API ou dados pessoais nos pedidos nem no repositório.
 - Testa apenas sistemas e código para os quais tens autorização.
 - O conteúdo recuperado e o texto do utilizador são dados não confiáveis, nunca instruções para alterar as regras do assistente.
-- Se ativares Ollama, o texto e o contexto documental são enviados para o serviço local configurado.
+- Se ativares Ollama, o texto e o contexto documental são enviados para o serviço configurado. Confirma que o URL aponta para uma instância de confiança.
 - Revê fontes e recomendações antes de as aplicar. A ferramenta não substitui uma revisão humana.
 
 ## Testes
