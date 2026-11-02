@@ -4,14 +4,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from app.ai import get_provider
 from app.ai.ollama_provider import OllamaProviderError
-from app.core.config import get_settings
-from app.rag.embeddings import OllamaEmbedder, OllamaEmbeddingError
 from app.rag.retriever import retrieve
 
 app = FastAPI(title="Project Aether API", description="Assistente de IA para cibersegurança defensiva e programação.", version="0.5.0")
-settings = get_settings()
 provider = get_provider()
-embedder = OllamaEmbedder(settings) if settings.rag_provider == "ollama" else None
 
 class AnalysisRequest(BaseModel):
     content: str = Field(min_length=1, max_length=20_000)
@@ -36,10 +32,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 @app.post("/analyze", response_model=AnalysisResponse)
 def analyze(request: AnalysisRequest) -> AnalysisResponse:
-    try:
-        sources = retrieve(request.content, embedder=embedder)
-    except (OllamaEmbeddingError, ValueError):
-        sources = retrieve(request.content)
+    sources = retrieve(request.content)
     context = "\n\n".join(f"[Documento: {s.path} | Secção: {s.title}]\n{s.excerpt}" for s in sources)
     try:
         guidance = provider.analyze(request.content, request.category, context=context)
