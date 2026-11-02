@@ -57,6 +57,14 @@ class Settings:
             raise ValueError("OLLAMA_BASE_URL deve ser um URL HTTP(S) válido, sem credenciais.")
 
 
+def _read_int_env(name: str, default: int) -> int:
+    """Lê uma variável inteira e identifica claramente erros de conversão."""
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError as exc:
+        raise ValueError(f"{name} deve ser um número inteiro.") from exc
+
+
 def get_settings() -> Settings:
     """Lê o ambiente e falha cedo quando a configuração é inválida."""
     try:
@@ -76,6 +84,6 @@ def get_settings() -> Settings:
             "RAG_EMBEDDING_MODEL", "nomic-embed-text"
         ).strip(),
         api_key=os.getenv("KAMBA_API_KEY", ""),
-        rate_limit_requests=int(os.getenv("KAMBA_RATE_LIMIT_REQUESTS", "60")),
-        rate_limit_window_seconds=int(os.getenv("KAMBA_RATE_LIMIT_WINDOW_SECONDS", "60")),
+        rate_limit_requests=_read_int_env("KAMBA_RATE_LIMIT_REQUESTS", 60),
+        rate_limit_window_seconds=_read_int_env("KAMBA_RATE_LIMIT_WINDOW_SECONDS", 60),
     )
