@@ -54,3 +54,22 @@ def test_get_settings_normalizes_provider_and_url(monkeypatch):
     assert settings.ai_provider == "ollama"
     assert settings.rag_provider == "ollama"
     assert settings.ollama_base_url == "http://localhost:11434"
+
+
+@pytest.mark.parametrize(
+    ("variable", "message"),
+    [
+        ("KAMBA_RATE_LIMIT_REQUESTS", "KAMBA_RATE_LIMIT_REQUESTS"),
+        ("KAMBA_RATE_LIMIT_WINDOW_SECONDS", "KAMBA_RATE_LIMIT_WINDOW_SECONDS"),
+    ],
+)
+def test_get_settings_rejects_non_integer_rate_limits(monkeypatch, variable, message):
+    monkeypatch.setenv(variable, "not-an-integer")
+    with pytest.raises(ValueError, match=message):
+        get_settings()
+
+
+def test_get_settings_rejects_non_positive_rate_limits(monkeypatch):
+    monkeypatch.setenv("KAMBA_RATE_LIMIT_REQUESTS", "0")
+    with pytest.raises(ValueError, match="inteiros positivos"):
+        get_settings()
