@@ -4,6 +4,7 @@ Executar apenas quando o serviço local e os modelos configurados estiverem disp
 KAMBA_OLLAMA_INTEGRATION=1 pytest -q tests/integration
 """
 import os
+from math import isfinite
 
 import pytest
 
@@ -18,8 +19,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_real_ollama_chat_and_embeddings_are_available():
-    """Confirma respostas não vazias e vetores finitos sem executar código."""
+def test_real_ollama_chat_returns_non_empty_answer():
+    """Confirma que /api/chat responde sem executar código submetido."""
     settings = get_settings()
 
     answer = OllamaProvider(settings).analyze(
@@ -27,17 +28,24 @@ def test_real_ollama_chat_and_embeddings_are_available():
         "cybersecurity",
         context="O princípio do menor privilégio limita cada utilizador às permissões necessárias.",
     )
+
+    assert len(answer) == 1
+    assert answer[0].strip()
+
+
+def test_real_ollama_embeddings_are_finite_and_consistent():
+    """Confirma quantidade, dimensão e validade numérica dos vetores."""
+    settings = get_settings()
+
     vectors = OllamaEmbedder(settings).embed(
         ["segurança defensiva", "princípio do menor privilégio"]
     )
 
-    assert len(answer) == 1
-    assert answer[0].strip()
     assert len(vectors) == 2
-    assert vectors[0]
+    assert all(vectors)
     assert len(vectors[0]) == len(vectors[1])
     assert all(
-        isinstance(value, float) and value == value and abs(value) != float("inf")
+        isfinite(value)
         for vector in vectors
         for value in vector
     )
