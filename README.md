@@ -4,9 +4,13 @@ Assistente de IA especializado em **cibersegurança defensiva** e **programaçã
 
 ## Estado atual
 
-A API FastAPI disponibiliza `GET /`, `GET /health` e `POST /analyze`. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
+A API FastAPI disponibiliza `GET /`, `GET /health`, `GET /ui` e `POST /analyze`. A interface web em `/ui` permite enviar texto para análise e apresenta orientação e fontes. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
 
 O projeto inclui:
+- Interface web estática servida pela própria API, sem framework JavaScript ou dependências adicionais.
+- Formulário com escolha de categoria, limite de 20 000 caracteres, contador, estado de carregamento e mensagens de erro.
+- Apresentação de resultados com APIs DOM seguras (`textContent`); o conteúdo recebido não é interpretado como HTML.
+- O browser não guarda pedidos em armazenamento local ou de sessão; as respostas de análise usam `Cache-Control: no-store`.
 - Fornecedor determinístico local (`AI_PROVIDER=rules`), ativo por omissão.
 - Fornecedor opcional Ollama (`AI_PROVIDER=ollama`) para inferência local.
 - RAG sobre documentos Markdown locais em `knowledge/`.
@@ -14,7 +18,6 @@ O projeto inclui:
 - Fallback para recuperação lexical se embeddings falharem ou forem inválidos.
 - Validação de configuração no arranque, para evitar opções desconhecidas e timeouts inseguros.
 - Cabeçalhos HTTP de segurança nas respostas da API.
-- Respostas de `POST /analyze` marcadas com `Cache-Control: no-store`.
 - Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
 - Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
 
@@ -27,13 +30,13 @@ python -m venv .venv
 # Linux/macOS
 source .venv/bin/activate
 # Windows PowerShell
-# .venv\Scripts\Activate.ps1
+# .venv\\Scripts\\Activate.ps1
 
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-A documentação interativa fica disponível em http://127.0.0.1:8000/docs.
+Abre a interface em http://127.0.0.1:8000/ui. A documentação interativa da API fica disponível em http://127.0.0.1:8000/docs.
 
 ## Configuração
 
@@ -78,6 +81,7 @@ Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de co
 
 - `GET /` — metadados do projeto.
 - `GET /health` — estado básico da API.
+- `GET /ui` — interface web.
 - `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.
 
 O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é executado.
@@ -85,6 +89,8 @@ O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é execut
 ## Segurança e privacidade
 
 - Não coloques passwords, tokens, chaves API ou dados pessoais nos pedidos nem no repositório.
+- A interface não guarda o texto em localStorage, sessionStorage ou cookies; limpa a apresentação anterior quando um novo pedido começa.
+- A interface usa `textContent` para apresentar conteúdo devolvido pela API, evitando interpretar esse conteúdo como HTML.
 - Os logs registam apenas identificador gerado pelo servidor, método, caminho, código HTTP, duração e tipo de exceção. Não registam corpos, query strings, cabeçalhos nem mensagens de exceção.
 - As respostas incluem `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` e uma `Permissions-Policy` que desativa câmara, microfone e geolocalização.
 - As respostas de análise usam `Cache-Control: no-store` para evitar armazenamento em cache do conteúdo e dos resultados.
