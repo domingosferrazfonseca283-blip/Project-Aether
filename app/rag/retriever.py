@@ -79,14 +79,16 @@ def _cosine(a: list[float], b: list[float]) -> float:
 
 def _lexical_score(query: str, title: str, body: str) -> int:
     """Dá maior peso aos termos do título e um bónus a frases coincidentes."""
-    terms = {token.lower() for token in _TOKEN.findall(query)}
+    query_tokens = [token.lower() for token in _TOKEN.findall(query)]
+    terms = set(query_tokens)
     title_terms = {token.lower() for token in _TOKEN.findall(title)}
     body_terms = {token.lower() for token in _TOKEN.findall(body)}
     score = 3 * len(terms & title_terms) + len(terms & body_terms)
-    normalized_query = " ".join(sorted(terms))
-    if normalized_query and normalized_query in " ".join(
-        _TOKEN.findall(f"{title} {body}")
-    ).lower():
+    normalized_query = " ".join(query_tokens)
+    normalized_document = " ".join(
+        token.lower() for token in _TOKEN.findall(f"{title} {body}")
+    )
+    if normalized_query and normalized_query in normalized_document:
         score += 2
     return score
 
