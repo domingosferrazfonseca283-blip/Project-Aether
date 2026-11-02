@@ -20,7 +20,7 @@ O projeto inclui:
 - Recuperação lexical por omissão e recuperação semântica opcional via embeddings Ollama.
 - Fallback para recuperação lexical se embeddings falharem ou forem inválidos.
 - Validação de configuração no arranque, para evitar opções desconhecidas e timeouts inseguros.
-- Cabeçalhos HTTP de segurança nas respostas da API.
+- Cabeçalhos HTTP de segurança nas respostas da API.\n- Autenticação opcional por chave API (`KAMBA_API_KEY`) nos endpoints de análise; quando configurada, exige o cabeçalho `X-API-Key`. Usa uma chave aleatória com pelo menos 32 caracteres e nunca a publiques no repositório.\n- Limitação de pedidos por endereço IP, em memória por processo, configurável por `KAMBA_RATE_LIMIT_REQUESTS` (por omissão 60) e `KAMBA_RATE_LIMIT_WINDOW_SECONDS` (por omissão 60). Em instalações com vários workers ou instâncias, usa um limitador partilhado externo antes de exposição pública.
 - Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
 - Revisão estática heurística de código como texto em `POST /review-code`, com identificadores de regra, severidade, linha e recomendações; não importa, compila nem executa o código recebido.\n- Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
 
@@ -82,7 +82,7 @@ A configuração é validada no arranque:
 - `OLLAMA_TIMEOUT_SECONDS`: número superior a 0 e até 300 segundos.
 - Os nomes dos modelos não podem estar vazios.
 
-Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de configuração, em vez de selecionar silenciosamente um fornecedor diferente.
+Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de configuração, em vez de selecionar silenciosamente um fornecedor diferente.\n\nPara ativar a autenticação da API, define `KAMBA_API_KEY` com uma chave aleatória de pelo menos 32 caracteres. Sem esta variável, a API permanece em modo de desenvolvimento sem autenticação; não exponhas essa configuração publicamente. Os limites de pedidos podem ser ajustados com `KAMBA_RATE_LIMIT_REQUESTS` e `KAMBA_RATE_LIMIT_WINDOW_SECONDS`.
 
 ## Endpoints
 
