@@ -100,3 +100,17 @@ def test_rate_limiter_enforces_limit_under_concurrent_requests():
         ))
 
     assert sum(results) == 5
+
+
+def test_rate_limiter_periodically_removes_expired_client_windows():
+    limiter = InMemoryRateLimiter(limit=2, window_seconds=10)
+
+    assert limiter.allow("expired-client", now=100)
+    assert limiter.allow("active-client", now=105)
+    assert "expired-client" in limiter._windows
+
+    assert limiter.allow("new-client", now=110)
+
+    assert "expired-client" not in limiter._windows
+    assert "active-client" in limiter._windows
+    assert "new-client" in limiter._windows
