@@ -15,6 +15,7 @@ from app.analysis.static_review import review_code
 from app.ai import get_provider
 from app.ai.ollama_provider import OllamaProviderError
 from app.core.config import get_settings
+from app.core.security import InMemoryRateLimiter, api_key_is_valid
 from app.rag.embeddings import OllamaEmbedder, OllamaEmbeddingError
 from app.rag.retriever import retrieve
 
@@ -27,6 +28,11 @@ app = FastAPI(
     version="0.6.0",
 )
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+rate_limiter = InMemoryRateLimiter(
+    limit=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+)
+PROTECTED_PATHS = {"/analyze", "/review-code", "/report"}
 
 
 @app.exception_handler(RequestValidationError)
@@ -50,8 +56,27 @@ async def request_observability(request, call_next):
     """Regista metadados mínimos e aplica cabeçalhos HTTP de segurança."""
     request_id = str(uuid4())
     started = perf_counter()
+    response = None
+    if request.method == "POST" and request.url.path in PROTECTED_PATHS:
+        if settings.api_key and not api_key_is_valid(
+            settings.api_key, request.headers.get("X-API-Key")
+        ):
+            response = JSONResponse(
+                status_code=401,
+                content={"detail": "Autenticação necessária."},
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+        else:
+            client_id = request.client.host if request.client else "unknown"
+            if not rate_limiter.allow(client_id):
+                response = JSONResponse(
+                    status_code=429,
+                    content={"detail": "Limite de pedidos excedido. Tenta novamente mais tarde."},
+                    headers={"Retry-After": str(settings.rate_limit_window_seconds)},
+                )
     try:
-        response = await call_next(request)
+        if response is None:
+            response = await call_next(request)
     except Exception as exc:
         logger.error(
             "request_failed request_id=%s method=%s path=%s error_type=%s duration_ms=%.2f",
@@ -68,7 +93,7 @@ async def request_observability(request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    if request.url.path == "/analyze":
+    if request.url.path in PROTECTED_PATHS:
         response.headers["Cache-Control"] = "no-store"
 
     logger.info(
