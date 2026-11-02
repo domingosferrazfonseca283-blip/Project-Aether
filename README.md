@@ -16,6 +16,7 @@ O projeto inclui:
 - Cabeçalhos HTTP de segurança nas respostas da API.
 - Respostas de `POST /analyze` marcadas com `Cache-Control: no-store`.
 - Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
+- Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
 
 ## Requisitos e instalação
 
