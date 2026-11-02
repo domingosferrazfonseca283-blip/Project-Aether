@@ -118,3 +118,35 @@ def test_rate_limiter_periodically_removes_expired_client_windows():
     assert "expired-client" not in limiter._windows
     assert "active-client" in limiter._windows
     assert "new-client" in limiter._windows
+
+
+def test_api_adds_security_headers_and_unique_request_ids():
+    client = TestClient(main_module.app)
+
+    first = client.get("/health")
+    second = client.get("/health")
+
+    for response in (first, second):
+        assert response.status_code == 200
+        assert response.headers["X-Request-ID"]
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+        assert response.headers["X-Frame-Options"] == "DENY"
+        assert response.headers["Referrer-Policy"] == "no-referrer"
+        assert response.headers["Permissions-Policy"] == (
+            "camera=(), microphone=(), geolocation=()"
+        )
+
+    assert first.headers["X-Request-ID"] != second.headers["X-Request-ID"]
+
+
+def test_validation_error_keeps_security_headers_without_echoing_input():
+    client = TestClient(main_module.app)
+    response = client.post(
+        "/analyze",
+        json={"content": "private-marker", "category": "invalid-category"},
+    )
+
+    assert response.status_code == 422
+    assert response.headers["X-Request-ID"]
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert "private-marker" not in response.text
