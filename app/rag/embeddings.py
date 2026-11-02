@@ -1,4 +1,6 @@
 """Adaptador de embeddings para uma instância Ollama local."""
+from math import isfinite
+
 import httpx
 
 from app.core.config import Settings
@@ -37,10 +39,19 @@ class OllamaEmbedder:
             or any(
                 not isinstance(vector, list)
                 or not vector
-                or any(not isinstance(value, (int, float)) for value in vector)
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not isfinite(value)
+                    for value in vector
+                )
                 for vector in embeddings
             )
         ):
             raise OllamaEmbeddingError("O modelo local devolveu embeddings inválidos.")
+
+        dimensions = {len(vector) for vector in embeddings}
+        if len(dimensions) != 1:
+            raise OllamaEmbeddingError("Os embeddings têm dimensões incompatíveis.")
 
         return [[float(value) for value in vector] for vector in embeddings]
