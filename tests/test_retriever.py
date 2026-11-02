@@ -150,13 +150,13 @@ def test_retrieve_returns_no_embedding_results_when_similarity_is_zero(tmp_path)
 
 def test_retrieve_prioritizes_matching_section_titles(tmp_path):
     (tmp_path / "a-general.md").write_text(
-        "# Guia geral\\n\\n## Introdução\\n"
+        "# Guia geral\n\n## Introdução\n"
         "Este texto aborda resposta, incidentes e gestão de incidentes "
         "com vários detalhes adicionais.",
         encoding="utf-8",
     )
     (tmp_path / "z-specific.md").write_text(
-        "# Guia\\n\\n## Resposta a incidentes\\n"
+        "# Guia\n\n## Resposta a incidentes\n"
         "Segue o plano documentado.",
         encoding="utf-8",
     )
@@ -171,12 +171,12 @@ def test_retrieve_prioritizes_matching_section_titles(tmp_path):
 
 def test_retrieve_rewards_exact_multiword_phrase(tmp_path):
     (tmp_path / "a-guide.md").write_text(
-        "# Guia\\n\\n## Operações\\n"
+        "# Guia\n\n## Operações\n"
         "A resposta rápida ajuda a gerir incidentes.",
         encoding="utf-8",
     )
     (tmp_path / "b-guide.md").write_text(
-        "# Guia\\n\\n## Resposta a incidentes\\n"
+        "# Guia\n\n## Resposta a incidentes\n"
         "Plano de resposta a incidentes.",
         encoding="utf-8",
     )
