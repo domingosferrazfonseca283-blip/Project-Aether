@@ -33,6 +33,8 @@ def _sections(markdown: str, path: str):
             heading = line.lstrip("#").strip() or path
             if line.startswith("# ") and not line.startswith("## "):
                 document_title = heading
+        else:
+            lines.append(line)
     body = "\n".join(lines).strip()
     if body:
         yield document_title, heading, body
