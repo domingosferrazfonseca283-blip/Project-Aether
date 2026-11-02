@@ -48,7 +48,7 @@ def test_protected_api_accepts_valid_key(monkeypatch):
         main_module, "settings",
         replace(main_module.settings, api_key="k" * 32),
     )
-    main_module.rate_limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
+    monkeypatch.setattr(main_module, "rate_limiter", InMemoryRateLimiter(limit=10, window_seconds=60))
     response = TestClient(main_module.app).post(
         "/review-code",
         json={"content": "print('safe')"},
@@ -62,10 +62,26 @@ def test_protected_api_returns_429_after_configured_limit(monkeypatch):
         main_module, "settings",
         replace(main_module.settings, api_key=""),
     )
-    main_module.rate_limiter = InMemoryRateLimiter(limit=1, window_seconds=60)
+    monkeypatch.setattr(main_module, "rate_limiter", InMemoryRateLimiter(limit=1, window_seconds=60))
     client = TestClient(main_module.app)
     first = client.post("/review-code", json={"content": "print('safe')"})
     second = client.post("/review-code", json={"content": "print('safe')"})
     assert first.status_code == 200
     assert second.status_code == 429
     assert second.headers["Retry-After"] == "60"
+
+def test_invalid_api_keys_are_also_rate_limited(monkeypatch):
+    monkeypatch.setattr(
+        main_module, "settings",
+        replace(main_module.settings, api_key="k" * 32),
+    )
+    monkeypatch.setattr(
+        main_module, "rate_limiter",
+        InMemoryRateLimiter(limit=1, window_seconds=60),
+    )
+    client = TestClient(main_module.app)
+    headers = {"X-API-Key": "x" * 32}
+
+    assert client.post("/review-code", json={"content": "print('safe')"}, headers=headers).status_code == 401
+    limited = client.post("/review-code", json={"content": "print('safe')"}, headers=headers)
+    assert limited.status_code == 429
