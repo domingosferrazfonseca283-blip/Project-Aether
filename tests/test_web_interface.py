@@ -11,7 +11,7 @@ def test_web_interface_is_served_with_security_headers() -> None:
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Project Aether" in response.text
+    assert "Kamba" in response.text
     assert 'id="analysis-form"' in response.text
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["X-Frame-Options"] == "DENY"
