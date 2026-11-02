@@ -30,6 +30,9 @@ def test_default_settings_are_safe_local_defaults(monkeypatch):
         {"ollama_base_url": "file:///etc/passwd"},
         {"ollama_base_url": "http://user:password@localhost:11434"},
         {"ollama_base_url": "http://localhost:11434?token=secret"},
+        {"ollama_base_url": "http://localhost:99999"},
+        {"ollama_base_url": "http://[::1"},
+        {"ollama_base_url": "http://local host:11434"},
     ],
 )
 def test_settings_reject_invalid_values(kwargs):
