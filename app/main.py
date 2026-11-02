@@ -55,6 +55,7 @@ async def validation_error_response(
 async def request_observability(request, call_next):
     """Regista metadados mínimos e aplica cabeçalhos HTTP de segurança."""
     request_id = str(uuid4())
+    request.state.request_id = request_id
     started = perf_counter()
     response = None
     if request.method == "POST" and request.url.path in PROTECTED_PATHS:
@@ -211,7 +212,8 @@ def analyze(request: AnalysisRequest) -> AnalysisResponse:
     except OllamaProviderError as exc:
         # Nunca devolver detalhes internos do fornecedor ao cliente.
         logger.warning(
-            "analysis_provider_unavailable provider=%s error_type=%s",
+            "analysis_provider_unavailable request_id=%s provider=%s error_type=%s",
+            getattr(request.state, "request_id", "unknown"),
             provider.name,
             type(exc).__name__,
         )
