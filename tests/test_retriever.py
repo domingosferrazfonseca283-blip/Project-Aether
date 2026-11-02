@@ -18,3 +18,36 @@ def test_retrieve_empty_query_returns_no_sources(tmp_path):
 
 def test_retrieve_missing_directory_returns_no_sources(tmp_path):
     assert retrieve("segurança", knowledge_dir=tmp_path / "missing") == []
+
+
+def test_retrieve_uses_embedding_similarity(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\n\n## Backups\nCópias de segurança e recuperação.\n\n"
+        "## Permissões\nControlo de acesso e privilégios.", encoding="utf-8"
+    )
+
+    class FakeEmbedder:
+        def embed(self, texts):
+            assert len(texts) == 3
+            # A consulta é semanticamente próxima do segundo documento.
+            return [[1.0, 0.0], [0.0, 1.0], [0.9, 0.1]]
+
+    results = retrieve(
+        "restaurar informação", knowledge_dir=tmp_path, embedder=FakeEmbedder()
+    )
+    assert results
+    assert results[0].title == "Permissões"
+
+
+def test_retrieve_rejects_wrong_embedding_count(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\n\n## Backups\nCópias de segurança.", encoding="utf-8"
+    )
+
+    class FakeEmbedder:
+        def embed(self, texts):
+            return [[1.0, 0.0]]
+
+    import pytest
+    with pytest.raises(ValueError, match="embeddings"):
+        retrieve("recuperação", knowledge_dir=tmp_path, embedder=FakeEmbedder())
