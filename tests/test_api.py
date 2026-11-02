@@ -139,7 +139,7 @@ def test_analyze_falls_back_to_lexical_retrieval(
     assert sources[0]["title"] == "Menor privilégio"
 
 
-def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch):
+def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch, caplog):
     import app.main as main
     from app.ai.ollama_provider import OllamaProviderError
 
@@ -163,6 +163,10 @@ def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch):
     }
     assert "super-secret" not in response.text
     assert "internal.local" not in response.text
+    assert "analysis_provider_unavailable" in caplog.text
+    assert "OllamaProviderError" in caplog.text
+    assert "super-secret" not in caplog.text
+    assert "internal.local" not in caplog.text
     assert response.headers["X-Request-ID"]
     assert response.headers["Cache-Control"] == "no-store"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
