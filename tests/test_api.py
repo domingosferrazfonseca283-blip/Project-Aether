@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.rag.embeddings import OllamaEmbeddingError
 
 client = TestClient(app)
 
@@ -39,7 +40,9 @@ def test_analyze_returns_safe_starter_guidance() -> None:
 
 
 def test_analyze_rejects_empty_content() -> None:
-    response = client.post("/analyze", json={"content": "", "category": "general"})
+    response = client.post(
+        "/analyze", json={"content": "", "category": "general"}
+    )
 
     assert response.status_code == 422
 
@@ -83,9 +86,7 @@ def test_analyze_returns_retrieved_sources():
 @pytest.mark.parametrize(
     "embedding_error",
     [
-        __import__("app.rag.embeddings", fromlist=["OllamaEmbeddingError"]).OllamaEmbeddingError(
-            "serviço indisponível"
-        ),
+        OllamaEmbeddingError("serviço indisponível"),
         ValueError("vetores inválidos"),
     ],
 )
@@ -96,8 +97,14 @@ def test_analyze_falls_back_to_lexical_retrieval(
     from app.rag.retriever import retrieve as real_retrieve
 
     (tmp_path / "guide.md").write_text(
-        "# Segurança\\n\\n## Menor privilégio\\n"
-        "Aplicar permissões mínimas e controlo de acesso.",
+        "\n".join(
+            [
+                "# Segurança",
+                "",
+                "## Menor privilégio",
+                "Aplicar permissões mínimas e controlo de acesso.",
+            ]
+        ),
         encoding="utf-8",
     )
 
@@ -125,8 +132,7 @@ def test_analyze_falls_back_to_lexical_retrieval(
     )
 
     assert response.status_code == 200
-    assert calls[0] is not None
-    assert calls[1] is None
+    assert calls == [main.embedder, None]
     sources = response.json()["sources"]
     assert sources
     assert sources[0]["path"] == "knowledge/guide.md"
