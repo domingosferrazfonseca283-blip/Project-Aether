@@ -58,3 +58,27 @@ O GitHub Actions executa esta suite automaticamente em cada push para `main` e e
 A API usa uma interface `AIProvider` em `app/ai/provider.py`. O fornecedor ativo é `RuleBasedProvider`, um placeholder local e determinístico que fornece orientações por categoria. **Ainda não é um LLM e não envia dados para serviços externos.**
 
 Esta separação permite integrar futuramente um modelo local ou um fornecedor externo sem acoplar a API à implementação. Antes dessa integração serão definidos gestão segura de credenciais, limites de utilização, proteção de dados e testes.
+
+
+## Modelo local opcional (Ollama)
+
+O fornecedor padrão é `rules`, que funciona sem rede. Para usar um modelo local:
+
+1. Instala e inicia o Ollama no teu computador.
+2. Obtém um modelo compatível através do próprio Ollama, por exemplo `qwen2.5:3b`.
+3. Define as variáveis de ambiente antes de iniciar a API:
+
+```bash
+# Linux/macOS
+export AI_PROVIDER=ollama
+export OLLAMA_MODEL=qwen2.5:3b
+export OLLAMA_BASE_URL=http://127.0.0.1:11434
+
+# Windows PowerShell
+$env:AI_PROVIDER="ollama"
+$env:OLLAMA_MODEL="qwen2.5:3b"
+$env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
+```
+
+O adaptador usa a API local `/api/chat`, com timeout configurável por `OLLAMA_TIMEOUT_SECONDS`. Se o serviço local estiver indisponível, a API devolve HTTP 503. O texto submetido é enviado ao serviço Ollama indicado; não incluas passwords, tokens ou dados pessoais. A Aether não executa código, comandos ou ações sugeridas pelo modelo.
+
