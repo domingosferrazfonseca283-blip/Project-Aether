@@ -10,8 +10,9 @@ def test_root_returns_project_metadata() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json()["project"] == "Project Aether"
+    assert response.json()["project"] == "Kamba"
     assert response.json()["version"] == "0.6.0"
+    assert response.json()["previous_project_name"] == "Project Aether"
 
 
 def test_health_check() -> None:
