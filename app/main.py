@@ -156,6 +156,7 @@ class CodeReviewResponse(BaseModel):
 
 
 class SourceResponse(BaseModel):
+    source_id: str
     title: str
     path: str
     excerpt: str
@@ -217,6 +218,7 @@ def analyze(request: AnalysisRequest) -> AnalysisResponse:
         guidance=guidance,
         sources=[
             SourceResponse(
+                source_id=source.source_id,
                 title=source.title,
                 path=source.path,
                 excerpt=source.excerpt,
