@@ -22,31 +22,34 @@ class Source:
 
 
 def _sections(markdown: str, path: str):
+    document_title = path
     heading, lines = path, []
     for line in markdown.splitlines():
         if line.startswith("#"):
             body = "\n".join(lines).strip()
             if body:
-                yield heading, body
+                yield document_title, heading, body
             lines = []
             heading = line.lstrip("#").strip() or path
-        else:
-            lines.append(line)
+            if line.startswith("# ") and not line.startswith("## "):
+                document_title = heading
     body = "\n".join(lines).strip()
     if body:
-        yield heading, body
+        yield document_title, heading, body
 
 
-def _documents(root: Path) -> list[tuple[str, str, str]]:
+def _documents(root: Path) -> list[tuple[str, str, str, str]]:
     return [
-        (path.name, heading, body)
+        (path.name, document_title, heading, body)
         for path in sorted(root.glob("*.md"))
-        for heading, body in _sections(path.read_text(encoding="utf-8"), path.name)
+        for document_title, heading, body in _sections(
+            path.read_text(encoding="utf-8"), path.name
+        )
     ]
 
 
-def _source(item: tuple[str, str, str]) -> Source:
-    path, heading, body = item
+def _source(item: tuple[str, str, str, str]) -> Source:
+    path, _, heading, body = item
     return Source(
         f"{path}#{heading}", heading, f"knowledge/{path}", body[:1200].strip(),
         f"Ver referências no final de {path}.",
@@ -77,16 +80,26 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b)) / (na * nb) if na and nb else 0.0
 
 
-def _lexical_score(query: str, title: str, body: str) -> int:
-    """Dá maior peso aos termos do título e um bónus a frases coincidentes."""
+def _lexical_score(
+    query: str, title: str, body: str, document_title: str = ""
+) -> int:
+    """Pondera título da secção, título do documento, corpo e frase exata."""
     query_tokens = [token.lower() for token in _TOKEN.findall(query)]
     terms = set(query_tokens)
     title_terms = {token.lower() for token in _TOKEN.findall(title)}
+    document_terms = {
+        token.lower() for token in _TOKEN.findall(document_title)
+    }
     body_terms = {token.lower() for token in _TOKEN.findall(body)}
-    score = 3 * len(terms & title_terms) + len(terms & body_terms)
+    score = (
+        3 * len(terms & title_terms)
+        + 4 * len(terms & document_terms)
+        + len(terms & body_terms)
+    )
     normalized_query = " ".join(query_tokens)
     normalized_document = " ".join(
-        token.lower() for token in _TOKEN.findall(f"{title} {body}")
+        token.lower()
+        for token in _TOKEN.findall(f"{document_title} {title} {body}")
     )
     if normalized_query and normalized_query in normalized_document:
         score += 2
@@ -109,18 +122,26 @@ def retrieve(
     if not docs:
         return []
     if embedder is not None:
-        vectors = embedder.embed([query] + [f"{h}\n{b}" for _, h, b in docs])
+        vectors = embedder.embed(
+            [query] + [
+                f"{document_title}\n{heading}\n{body}"
+                for _, document_title, heading, body in docs
+            ]
+        )
         _validate_vectors(vectors, len(docs) + 1)
         ranked = sorted(
-            ((_cosine(vectors[0], vector), doc) for vector, doc in zip(vectors[1:], docs)),
-            key=lambda item: (-item[0], item[1][0], item[1][1]),
+            (
+                (_cosine(vectors[0], vector), doc)
+                for vector, doc in zip(vectors[1:], docs)
+            ),
+            key=lambda item: (-item[0], item[1][0], item[1][2]),
         )
         return [_source(doc) for score, doc in ranked[:limit] if score > 0]
 
     ranked = []
     for doc in docs:
-        score = _lexical_score(query, doc[1], doc[2])
+        score = _lexical_score(query, doc[2], doc[3], doc[1])
         if score:
             ranked.append((score, doc))
-    ranked.sort(key=lambda item: (-item[0], item[1][0], item[1][1]))
+    ranked.sort(key=lambda item: (-item[0], item[1][0], item[1][2]))
     return [_source(doc) for _, doc in ranked[:limit]]
