@@ -178,7 +178,7 @@ class SecurityReportSummary(BaseModel):
 
 class SecurityReportResponse(BaseModel):
     report_name: str
-    generated_at: str
+    generated_at: datetime
     analysis_mode: str
     summary: SecurityReportSummary
     findings: list[FindingResponse]
