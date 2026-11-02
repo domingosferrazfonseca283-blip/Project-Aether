@@ -253,12 +253,12 @@ def test_source_ids_are_stable_and_unique_for_duplicate_headings(tmp_path):
 
 def test_retrieval_evaluation_compares_lexical_and_semantic_paraphrases(tmp_path):
     (tmp_path / "a-access.md").write_text(
-        "# Acesso\\n\\n## Controlo de acesso\\n"
+        "# Acesso\n\n## Controlo de acesso\n"
         "Autenticação multifator e autorização por função.",
         encoding="utf-8",
     )
     (tmp_path / "b-recovery.md").write_text(
-        "# Recuperação\\n\\n## Cópias de segurança\\n"
+        "# Recuperação\n\n## Cópias de segurança\n"
         "Cópias de segurança permitem recuperar informação após falhas.",
         encoding="utf-8",
     )
