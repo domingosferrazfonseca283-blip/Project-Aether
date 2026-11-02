@@ -1,17 +1,20 @@
-"""Initial API for Project Aether.
+"""API inicial do Project Aether.
 
-This starter version does not execute submitted code or perform live scans.
+Esta versão não executa código submetido nem realiza scans em sistemas.
 """
 from typing import Literal
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from app.ai import get_provider
+
 app = FastAPI(
     title="Project Aether API",
     description="Assistente de IA para cibersegurança defensiva e programação.",
-    version="0.1.0",
+    version="0.2.0",
 )
+provider = get_provider()
 
 
 class AnalysisRequest(BaseModel):
@@ -22,6 +25,7 @@ class AnalysisRequest(BaseModel):
 class AnalysisResponse(BaseModel):
     category: str
     status: str
+    provider: str
     guidance: list[str]
 
 
@@ -30,7 +34,7 @@ def root() -> dict[str, str]:
     return {
         "project": "Project Aether",
         "description": "Assistente de cibersegurança defensiva e programação",
-        "version": "0.1.0",
+        "version": "0.2.0",
     }
 
 
@@ -41,15 +45,10 @@ def health() -> dict[str, str]:
 
 @app.post("/analyze", response_model=AnalysisResponse)
 def analyze(request: AnalysisRequest) -> AnalysisResponse:
-    """Return safe starter guidance; model/RAG integration comes later."""
-    guidance = [
-        "Descreve o objetivo e o contexto do código ou sistema.",
-        "Remove passwords, tokens, dados pessoais e outros segredos antes de partilhar.",
-        "Para avaliações de segurança, trabalha apenas em sistemas com autorização.",
-        "Esta versão não executa código, não explora sistemas e não confirma vulnerabilidades.",
-    ]
+    """Devolve orientação inicial sem executar o conteúdo submetido."""
     return AnalysisResponse(
         category=request.category,
         status="starter_mode",
-        guidance=guidance,
+        provider="rule_based_placeholder",
+        guidance=provider.guidance_for(request.category),
     )
