@@ -82,3 +82,10 @@ $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 
 O adaptador usa a API local `/api/chat`, com timeout configurável por `OLLAMA_TIMEOUT_SECONDS`. Se o serviço local estiver indisponível, a API devolve HTTP 503. O texto submetido é enviado ao serviço Ollama indicado; não incluas passwords, tokens ou dados pessoais. A Aether não executa código, comandos ou ações sugeridas pelo modelo.
 
+
+
+## Recuperação documental (RAG inicial)
+
+A versão 0.4.0 inclui recuperação lexical local de secções Markdown em `knowledge/`. A API devolve as fontes encontradas em `sources`, incluindo caminho, secção, excerto e indicação de referência. O contexto recuperado é tratado como dado não confiável: não pode alterar as instruções do assistente nem desencadear execução de código.
+
+A recuperação é deliberadamente simples (correspondência de termos), não utiliza embeddings nem pesquisa na Internet. As referências externas são apresentadas nos próprios documentos para consulta e validação. Adiciona apenas documentação técnica de fontes reconhecidas e revê-a antes de a integrar.
