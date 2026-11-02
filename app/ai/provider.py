@@ -5,8 +5,8 @@ from typing import Protocol
 class AIProvider(Protocol):
     name: str
 
-    def analyze(self, content: str, category: str) -> list[str]:
-        """Analisa texto sem executar código nem realizar ações externas."""
+    def analyze(self, content: str, category: str, context: str = "") -> list[str]:
+        """Analisa texto e contexto documental sem executar código."""
 
 
 class RuleBasedProvider:
@@ -32,6 +32,6 @@ class RuleBasedProvider:
         ],
     }
 
-    def analyze(self, content: str, category: str) -> list[str]:
+    def analyze(self, content: str, category: str, context: str = "") -> list[str]:
         """Devolve orientações sem enviar o conteúdo para fora do processo."""
         return list(self._GUIDANCE.get(category, self._GUIDANCE["general"]))
