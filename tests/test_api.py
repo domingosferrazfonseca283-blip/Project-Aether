@@ -71,5 +71,8 @@ def test_analyze_returns_retrieved_sources():
     assert response.status_code == 200
     sources = response.json()["sources"]
     assert sources
+    assert sources[0]["source_id"].startswith("security-basics.md#")
     assert sources[0]["path"].startswith("knowledge/")
+    assert sources[0]["title"]
+    assert sources[0]["excerpt"]
     assert sources[0]["reference"].startswith("Ver referências")
