@@ -6,6 +6,8 @@ def test_api_key_validation_requires_exact_configured_secret():
     assert not api_key_is_valid("a" * 32, "b" * 32)
     assert not api_key_is_valid("a" * 32, None)
     assert not api_key_is_valid("", "a" * 32)
+    assert not api_key_is_valid("a" * 32, "chave-com-caracteres-ç")
+    assert not api_key_is_valid("chave-com-caracteres-ç", "a" * 32)
 
 
 def test_rate_limiter_enforces_and_resets_fixed_window():
