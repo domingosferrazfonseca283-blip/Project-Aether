@@ -104,3 +104,45 @@ def test_retrieve_curated_security_knowledge_and_references(
     # The expected source must rank first, not merely appear somewhere in top-k.
     assert results[0].path == expected_path
     assert reference in results[0].excerpt
+
+
+def test_retrieve_returns_no_sources_for_unrelated_query(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\\n\\n## Backups\\nCópias de segurança e recuperação.",
+        encoding="utf-8",
+    )
+
+    assert retrieve("astronomia planetas telescópios", knowledge_dir=tmp_path) == []
+
+
+def test_retrieve_uses_stable_order_for_equal_lexical_scores(tmp_path):
+    (tmp_path / "b-guide.md").write_text(
+        "# Guia B\\n\\n## Segurança B\\nPrincípios de segurança.",
+        encoding="utf-8",
+    )
+    (tmp_path / "a-guide.md").write_text(
+        "# Guia A\\n\\n## Segurança A\\nPrincípios de segurança.",
+        encoding="utf-8",
+    )
+
+    results = retrieve("segurança princípios", knowledge_dir=tmp_path, limit=1)
+
+    assert len(results) == 1
+    assert results[0].path == "knowledge/a-guide.md"
+
+
+def test_retrieve_returns_no_embedding_results_when_similarity_is_zero(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\\n\\n## Backups\\nCópias de segurança.",
+        encoding="utf-8",
+    )
+
+    class ZeroEmbedder:
+        def embed(self, texts):
+            return [[0.0, 0.0] for _ in texts]
+
+    assert retrieve(
+        "consulta sem correspondência",
+        knowledge_dir=tmp_path,
+        embedder=ZeroEmbedder(),
+    ) == []
