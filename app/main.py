@@ -58,7 +58,15 @@ async def request_observability(request, call_next):
     started = perf_counter()
     response = None
     if request.method == "POST" and request.url.path in PROTECTED_PATHS:
-        if settings.api_key and not api_key_is_valid(
+        # Limitar antes de autenticar também abranda tentativas com chaves inválidas.
+        client_id = request.client.host if request.client else "unknown"
+        if not rate_limiter.allow(client_id):
+            response = JSONResponse(
+                status_code=429,
+                content={"detail": "Limite de pedidos excedido. Tenta novamente mais tarde."},
+                headers={"Retry-After": str(settings.rate_limit_window_seconds)},
+            )
+        elif settings.api_key and not api_key_is_valid(
             settings.api_key, request.headers.get("X-API-Key")
         ):
             response = JSONResponse(
@@ -66,14 +74,6 @@ async def request_observability(request, call_next):
                 content={"detail": "Autenticação necessária."},
                 headers={"WWW-Authenticate": "ApiKey"},
             )
-        else:
-            client_id = request.client.host if request.client else "unknown"
-            if not rate_limiter.allow(client_id):
-                response = JSONResponse(
-                    status_code=429,
-                    content={"detail": "Limite de pedidos excedido. Tenta novamente mais tarde."},
-                    headers={"Retry-After": str(settings.rate_limit_window_seconds)},
-                )
     try:
         if response is None:
             response = await call_next(request)
