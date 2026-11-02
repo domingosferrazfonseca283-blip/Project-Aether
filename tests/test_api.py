@@ -11,7 +11,7 @@ def test_root_returns_project_metadata() -> None:
 
     assert response.status_code == 200
     assert response.json()["project"] == "Project Aether"
-    assert response.json()["version"] == "0.5.0"
+    assert response.json()["version"] == "0.6.0"
 
 
 def test_health_check() -> None:
