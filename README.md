@@ -51,3 +51,10 @@ O GitHub Actions executa esta suite automaticamente em cada push para `main` e e
 1. Definir a interface de um fornecedor/modelo de IA sem prender o projeto a um único serviço.
 2. Implementar recuperação de documentação (RAG) com fontes verificáveis.
 3. Adicionar testes de segurança, limites de entrada e registos sem dados sensíveis.
+
+
+## Motor de IA (fase atual)
+
+A API usa uma interface `AIProvider` em `app/ai/provider.py`. O fornecedor ativo é `RuleBasedProvider`, um placeholder local e determinístico que fornece orientações por categoria. **Ainda não é um LLM e não envia dados para serviços externos.**
+
+Esta separação permite integrar futuramente um modelo local ou um fornecedor externo sem acoplar a API à implementação. Antes dessa integração serão definidos gestão segura de credenciais, limites de utilização, proteção de dados e testes.
