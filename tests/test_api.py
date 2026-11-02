@@ -170,3 +170,40 @@ def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch, 
     assert response.headers["X-Request-ID"]
     assert response.headers["Cache-Control"] == "no-store"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_analyze_passes_retrieved_context_to_ai_provider(monkeypatch):
+    import app.main as main
+
+    captured = {}
+
+    class CapturingProvider:
+        name = "ollama_local"
+
+        def analyze(self, content, category, context=""):
+            captured.update(
+                content=content,
+                category=category,
+                context=context,
+            )
+            return ["Resposta baseada no contexto recuperado."]
+
+    monkeypatch.setattr(main, "provider", CapturingProvider())
+    response = client.post(
+        "/analyze",
+        json={
+            "content": "Como aplicar o princípio do menor privilégio?",
+            "category": "cybersecurity",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["guidance"] == [
+        "Resposta baseada no contexto recuperado."
+    ]
+    assert captured["content"] == "Como aplicar o princípio do menor privilégio?"
+    assert captured["category"] == "cybersecurity"
+    assert "knowledge/" in captured["context"]
+    assert "Menor privilégio" in captured["context"]
+    assert response.json()["sources"]
+
