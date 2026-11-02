@@ -1,5 +1,6 @@
 """Recuperação lexical ou semântica de secções Markdown locais."""
 from dataclasses import dataclass
+from hashlib import sha256
 from math import isfinite, sqrt
 from pathlib import Path
 import re
@@ -52,8 +53,11 @@ def _documents(root: Path) -> list[tuple[str, str, str, str]]:
 
 def _source(item: tuple[str, str, str, str]) -> Source:
     path, _, heading, body = item
+    fingerprint = sha256(
+        f"{path}\0{heading}\0{body}".encode("utf-8")
+    ).hexdigest()[:16]
     return Source(
-        f"{path}#{heading}", heading, f"knowledge/{path}", body[:1200].strip(),
+        f"{path}#{fingerprint}", heading, f"knowledge/{path}", body[:1200].strip(),
         f"Ver referências no final de {path}.",
     )
 
