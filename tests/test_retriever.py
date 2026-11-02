@@ -101,5 +101,6 @@ def test_retrieve_curated_security_knowledge_and_references(
     results = retrieve(query)
 
     assert results
-    assert any(source.path == expected_path for source in results)
-    assert any(reference in source.excerpt for source in results)
+    # The expected source must rank first, not merely appear somewhere in top-k.
+    assert results[0].path == expected_path
+    assert reference in results[0].excerpt
