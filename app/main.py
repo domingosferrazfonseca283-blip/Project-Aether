@@ -150,10 +150,38 @@ class SecurityReportRequest(BaseModel):
         return value
 
 
+class FindingResponse(BaseModel):
+    rule_id: str
+    severity: Literal["high", "medium", "low"]
+    line: int = Field(ge=1)
+    message: str
+    recommendation: str
+
+
 class CodeReviewResponse(BaseModel):
     status: str
     analysis_mode: str
-    findings: list[dict[str, object]]
+    findings: list[FindingResponse]
+
+
+class SeverityCounts(BaseModel):
+    high: int = Field(ge=0)
+    medium: int = Field(ge=0)
+    low: int = Field(ge=0)
+
+
+class SecurityReportSummary(BaseModel):
+    findings_total: int = Field(ge=0)
+    severity_counts: SeverityCounts
+    limitations: list[str]
+
+
+class SecurityReportResponse(BaseModel):
+    report_name: str
+    generated_at: str
+    analysis_mode: str
+    summary: SecurityReportSummary
+    findings: list[FindingResponse]
 
 
 class SourceResponse(BaseModel):
@@ -254,26 +282,26 @@ def review_submitted_code(request: CodeReviewRequest) -> CodeReviewResponse:
     )
 
 
-@app.post("/report", response_model=dict[str, object])
-def generate_security_report(request: SecurityReportRequest) -> dict[str, object]:
+@app.post("/report", response_model=SecurityReportResponse)
+def generate_security_report(request: SecurityReportRequest) -> SecurityReportResponse:
     """Gera um relatório estruturado a partir da revisão estática; não executa o código."""
     findings = review_code(request.content)
     counts = {
         severity: sum(1 for item in findings if item["severity"] == severity)
         for severity in ("high", "medium", "low")
     }
-    return {
-        "report_name": "Kamba — Relatório de revisão estática",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "analysis_mode": "static_text_only",
-        "summary": {
-            "findings_total": len(findings),
-            "severity_counts": counts,
-            "limitations": [
+    return SecurityReportResponse(
+        report_name="Kamba — Relatório de revisão estática",
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        analysis_mode="static_text_only",
+        summary=SecurityReportSummary(
+            findings_total=len(findings),
+            severity_counts=SeverityCounts(**counts),
+            limitations=[
                 "Análise heurística baseada em padrões; pode produzir falsos positivos e falsos negativos.",
                 "Não executa, importa ou compila o código submetido.",
                 "Não substitui SAST especializado nem revisão humana.",
             ],
-        },
-        "findings": findings,
-    }
+        ),
+        findings=findings,
+    )
