@@ -62,6 +62,7 @@ class OllamaProvider:
         payload = {
             "model": self.settings.ollama_model,
             "stream": False,
+            "options": {"num_predict": 1024},
             "messages": messages,
         }
         try:
