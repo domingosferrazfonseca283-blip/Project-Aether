@@ -22,6 +22,10 @@ O projeto inclui:
 - Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
 - Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
 
+
+- Base de conhecimento ampliada com guias defensivos sobre desenvolvimento seguro, resposta a incidentes e segurança de aplicações, com referências oficiais NIST, CISA e OWASP.
+- A documentação identifica versões e estados das publicações consultadas; a OWASP Top 10:2025 é tratada como referência de sensibilização, não como lista exaustiva.
+
 ## Requisitos e instalação
 
 Requer Python 3.11 ou superior.
