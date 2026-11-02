@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
+from app.analysis.static_review import review_code
 from app.ai import get_provider
 from app.ai.ollama_provider import OllamaProviderError
 from app.core.config import get_settings
@@ -100,6 +101,23 @@ class AnalysisRequest(BaseModel):
         return value
 
 
+class CodeReviewRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=20_000)
+
+    @field_validator("content")
+    @classmethod
+    def code_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("O código não pode conter apenas espaços.")
+        return value
+
+
+class CodeReviewResponse(BaseModel):
+    status: str
+    analysis_mode: str
+    findings: list[dict[str, object]]
+
+
 class SourceResponse(BaseModel):
     title: str
     path: str
@@ -168,4 +186,18 @@ def analyze(request: AnalysisRequest) -> AnalysisResponse:
             )
             for source in sources
         ],
+    )
+
+
+@app.post("/review-code", response_model=CodeReviewResponse)
+def review_submitted_code(request: CodeReviewRequest) -> CodeReviewResponse:
+    """Revê código como texto; nunca o importa, compila ou executa."""
+    try:
+        findings = review_code(request.content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return CodeReviewResponse(
+        status="completed",
+        analysis_mode="static_text_only",
+        findings=findings,
     )
