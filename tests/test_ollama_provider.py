@@ -126,3 +126,92 @@ def test_ollama_provider_uses_configured_timeout(monkeypatch):
     provider = OllamaProvider(Settings(ollama_timeout_seconds=7.5))
     provider.analyze("Ajuda", "general")
     assert captured["timeout"] == 7.5
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"message": {}},
+        {"message": {"content": None}},
+        {"message": {"content": ""}},
+        {"message": {"content": "   "}},
+        {"message": "formato inválido"},
+    ],
+)
+def test_ollama_provider_rejects_malformed_or_empty_responses(monkeypatch, payload):
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return payload
+
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json):
+            return Response()
+
+    monkeypatch.setattr(httpx, "Client", Client)
+    provider = OllamaProvider(Settings())
+
+    with pytest.raises(OllamaProviderError):
+        provider.analyze("Pedido de teste", "general")
+
+
+def test_ollama_provider_converts_http_error_to_controlled_error(monkeypatch):
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json):
+            request = httpx.Request("POST", url)
+            response = httpx.Response(503, request=request)
+            raise httpx.HTTPStatusError(
+                "serviço indisponível", request=request, response=response
+            )
+
+    monkeypatch.setattr(httpx, "Client", Client)
+    provider = OllamaProvider(Settings())
+
+    with pytest.raises(OllamaProviderError) as error:
+        provider.analyze("Pedido de teste", "general")
+
+    assert isinstance(error.value.__cause__, httpx.HTTPStatusError)
+
+
+def test_ollama_provider_converts_read_timeout_to_controlled_error(monkeypatch):
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json):
+            raise httpx.ReadTimeout("tempo limite excedido")
+
+    monkeypatch.setattr(httpx, "Client", Client)
+    provider = OllamaProvider(Settings())
+
+    with pytest.raises(OllamaProviderError) as error:
+        provider.analyze("Pedido de teste", "general")
+
+    assert isinstance(error.value.__cause__, httpx.ReadTimeout)
