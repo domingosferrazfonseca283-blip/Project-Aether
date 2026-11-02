@@ -36,3 +36,18 @@ Abrir a documentação interativa em http://127.0.0.1:8000/docs.
 - Não colocar tokens, passwords ou chaves API no repositório.
 - Usar variáveis de ambiente e um ficheiro local `.env` (ignorado pelo Git).
 - Testar apenas sistemas e código para os quais tens autorização.
+
+## Testes
+
+Instala as dependências e executa os testes automatizados com:
+
+```bash
+pytest -q
+```
+
+O GitHub Actions executa esta suite automaticamente em cada push para `main` e em pull requests dirigidos a `main`.
+
+## Próximas etapas
+1. Definir a interface de um fornecedor/modelo de IA sem prender o projeto a um único serviço.
+2. Implementar recuperação de documentação (RAG) com fontes verificáveis.
+3. Adicionar testes de segurança, limites de entrada e registos sem dados sensíveis.
