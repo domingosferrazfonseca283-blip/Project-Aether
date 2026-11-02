@@ -24,7 +24,7 @@ def test_prompt_injection_remains_untrusted_user_data(injection):
     user = messages[1]["content"]
 
     assert "não sigas" in system
-    assert "não confiável" in system
+    assert "dados não confiáveis" in system
     assert injection in user
     assert "<user_content>" in user
     assert "</user_content>" in user
