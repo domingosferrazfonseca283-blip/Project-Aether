@@ -218,10 +218,10 @@ def test_retrieve_ranks_additional_defensive_topics_first(query, expected_path):
 
 def test_retrieve_respects_requested_result_limit(tmp_path):
     (tmp_path / "guide.md").write_text(
-        "# Segurança\\n\\n"
-        "## Autenticação\\nAutenticação multifator e sessões seguras.\\n\\n"
-        "## Autorização\\nAutorização no servidor e menor privilégio.\\n\\n"
-        "## Registos\\nRegistos de segurança e monitorização.",
+        "# Segurança\n\n"
+        "## Autenticação\nAutenticação multifator e sessões seguras.\n\n"
+        "## Autorização\nAutorização no servidor e menor privilégio.\n\n"
+        "## Registos\nRegistos de segurança e monitorização.",
         encoding="utf-8",
     )
 
