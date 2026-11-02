@@ -11,7 +11,7 @@ def test_root_returns_project_metadata() -> None:
 
     assert response.status_code == 200
     assert response.json()["project"] == "Project Aether"
-    assert response.json()["version"] == "0.2.0"
+    assert response.json()["version"] == "0.3.0"
 
 
 def test_health_check() -> None:
@@ -31,7 +31,7 @@ def test_analyze_returns_safe_starter_guidance() -> None:
     body = response.json()
     assert body["category"] == "programming"
     assert body["status"] == "starter_mode"
-    assert body["provider"] == "rule_based_placeholder"
+    assert body["provider"] == "rule_based"
     assert len(body["guidance"]) >= 3
 
 
