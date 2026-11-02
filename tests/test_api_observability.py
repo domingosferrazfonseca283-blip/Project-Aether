@@ -71,3 +71,17 @@ def test_unavailable_provider_logs_safe_error_metadata(monkeypatch, caplog):
     assert "conteúdo confidencial" not in caplog.text
     assert response.headers["Cache-Control"] == "no-store"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+def test_validation_errors_do_not_echo_submitted_content():
+    private_text = "conteudo-privado-que-nao-deve-ser-repetido"
+    response = client.post("/analyze", json={"content": private_text, "category": "invalid"})
+
+    assert response.status_code == 422
+    assert private_text not in response.text
+    assert response.json()["detail"]
+    assert response.headers.get("X-Request-ID")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    error = response.json()["detail"][0]
+    assert error["loc"] == ["body", "category"]
+    assert "input" not in error
+
