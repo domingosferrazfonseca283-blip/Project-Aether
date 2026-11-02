@@ -1,5 +1,8 @@
 """API do Project Aether. Não executa código nem realiza scans."""
+from logging import getLogger
+from time import perf_counter
 from typing import Literal
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -12,11 +15,42 @@ from app.rag.retriever import retrieve
 
 
 settings = get_settings()
+logger = getLogger("project_aether.api")
 app = FastAPI(
     title="Project Aether API",
     description="Assistente de IA para cibersegurança defensiva e programação.",
-    version="0.5.0",
+    version="0.6.0",
 )
+@app.middleware("http")
+async def request_observability(request, call_next):
+    """Regista metadados mínimos; nunca regista corpos, query strings ou cabeçalhos."""
+    request_id = str(uuid4())
+    started = perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error(
+            "request_failed request_id=%s method=%s path=%s error_type=%s duration_ms=%.2f",
+            request_id,
+            request.method,
+            request.url.path,
+            type(exc).__name__,
+            (perf_counter() - started) * 1000,
+        )
+        raise
+
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        (perf_counter() - started) * 1000,
+    )
+    return response
+
+
 provider = get_provider()
 embedder = (
     OllamaEmbedder(settings)
