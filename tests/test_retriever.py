@@ -229,3 +229,22 @@ def test_retrieve_respects_requested_result_limit(tmp_path):
 
     assert len(results) == 2
 
+
+
+def test_source_ids_are_stable_and_unique_for_duplicate_headings(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\n\n## Configuração\nPrimeiro conteúdo sobre autenticação.\n\n"
+        "## Configuração\nSegundo conteúdo sobre autorização.",
+        encoding="utf-8",
+    )
+
+    first = retrieve("configuração autenticação autorização", knowledge_dir=tmp_path, limit=2)
+    second = retrieve("configuração autenticação autorização", knowledge_dir=tmp_path, limit=2)
+
+    assert len(first) == 2
+    assert first[0].source_id != first[1].source_id
+    assert [source.source_id for source in first] == [
+        source.source_id for source in second
+    ]
+    assert all(source.source_id.startswith("guide.md#") for source in first)
+    assert all(source.path == "knowledge/guide.md" for source in first)
