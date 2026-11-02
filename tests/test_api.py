@@ -204,6 +204,6 @@ def test_analyze_passes_retrieved_context_to_ai_provider(monkeypatch):
     assert captured["content"] == "Como aplicar o princípio do menor privilégio?"
     assert captured["category"] == "cybersecurity"
     assert "knowledge/" in captured["context"]
-    assert "Menor privilégio" in captured["context"]
+    assert "Princípio do menor privilégio" in captured["context"]
     assert response.json()["sources"]
 
