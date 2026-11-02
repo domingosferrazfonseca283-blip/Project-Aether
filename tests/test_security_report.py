@@ -20,6 +20,13 @@ def test_report_contains_summary_findings_and_limitations():
     assert report["summary"]["severity_counts"]["high"] == 1
     assert report["summary"]["severity_counts"]["medium"] == 1
     assert len(report["summary"]["limitations"]) >= 2
+    assert set(report["summary"]["severity_counts"]) == {"high", "medium", "low"}
+    assert all(item["line"] >= 1 for item in report["findings"])
+    assert all(item["severity"] in {"high", "medium", "low"} for item in report["findings"])
+    assert all(
+        set(item) == {"rule_id", "severity", "line", "message", "recommendation"}
+        for item in report["findings"]
+    )
     assert all("example-secret-value" not in str(item) for item in report["findings"])
 
 
