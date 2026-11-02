@@ -1,4 +1,6 @@
 """Testes determinísticos do adaptador HTTP de embeddings Ollama."""
+import json
+
 import httpx
 import pytest
 
@@ -37,8 +39,9 @@ def test_ollama_embedder_returns_vectors_and_sends_expected_request(monkeypatch)
     assert len(requests) == 1
     assert requests[0].method == "POST"
     assert requests[0].url == "http://127.0.0.1:11434/api/embed"
-    assert requests[0].read()["model"] == "nomic-embed-text"
-    assert requests[0].read()["input"] == ["query", "document"]
+    payload = json.loads(requests[0].content)
+    assert payload["model"] == "nomic-embed-text"
+    assert payload["input"] == ["query", "document"]
 
 
 @pytest.mark.parametrize(
