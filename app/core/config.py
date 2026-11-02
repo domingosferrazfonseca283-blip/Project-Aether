@@ -11,6 +11,7 @@ class Settings:
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen2.5:3b"
     ollama_timeout_seconds: float = 30.0
+    ollama_num_predict: int = 1024
     rag_provider: str = "lexical"
     rag_embedding_model: str = "nomic-embed-text"
     api_key: str = ""
@@ -26,6 +27,8 @@ class Settings:
             raise ValueError("KAMBA_API_KEY deve ter pelo menos 32 caracteres.")
         if self.rate_limit_requests < 1 or self.rate_limit_window_seconds < 1:
             raise ValueError("Os limites de pedidos devem ser inteiros positivos.")
+        if isinstance(self.ollama_num_predict, bool) or not 1 <= self.ollama_num_predict <= 8192:
+            raise ValueError("OLLAMA_NUM_PREDICT deve estar entre 1 e 8192.")
         if not self.ollama_model.strip():
             raise ValueError("OLLAMA_MODEL não pode estar vazio.")
         if not self.rag_embedding_model.strip():
@@ -79,6 +82,7 @@ def get_settings() -> Settings:
         ).rstrip("/"),
         ollama_model=os.getenv("OLLAMA_MODEL", "qwen2.5:3b").strip(),
         ollama_timeout_seconds=timeout,
+        ollama_num_predict=_read_int_env("OLLAMA_NUM_PREDICT", 1024),
         rag_provider=os.getenv("RAG_PROVIDER", "lexical").strip().lower(),
         rag_embedding_model=os.getenv(
             "RAG_EMBEDDING_MODEL", "nomic-embed-text"
