@@ -1,10 +1,12 @@
-# Project Aether
+# Kamba
+
+> Nome anterior do projeto: Project Aether. O repositório GitHub mantém o nome técnico `Project-Aether`.
 
 Assistente de IA especializado em **cibersegurança defensiva** e **programação**.
 
 ## Estado atual
 
-A API FastAPI disponibiliza `GET /`, `GET /health`, `GET /ui` e `POST /analyze` e `POST /review-code`. A interface web em `/ui` permite enviar texto para análise e apresenta orientação e fontes. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
+A API FastAPI disponibiliza `GET /`, `GET /health`, `GET /ui` e `POST /analyze`, `POST /review-code` e `POST /report`. A interface web em `/ui` permite enviar texto para análise e apresenta orientação e fontes. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
 
 O projeto inclui:
 - Interface web estática servida pela própria API, sem framework JavaScript ou dependências adicionais.
@@ -88,6 +90,7 @@ Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de co
 - `GET /health` — estado básico da API.
 - `GET /ui` — interface web.
 - `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.\n- `POST /review-code` — recebe código como texto e devolve achados heurísticos estáticos; não executa código nem substitui ferramentas especializadas ou revisão humana.
+- `POST /report` — gera um relatório JSON da revisão estática, incluindo data, resumo, severidades, achados e limitações.
 
 O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é executado.
 
