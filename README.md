@@ -4,7 +4,7 @@ Assistente de IA especializado em **cibersegurança defensiva** e **programaçã
 
 ## Estado atual
 
-A API FastAPI disponibiliza `GET /`, `GET /health`, `GET /ui` e `POST /analyze`. A interface web em `/ui` permite enviar texto para análise e apresenta orientação e fontes. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
+A API FastAPI disponibiliza `GET /`, `GET /health`, `GET /ui` e `POST /analyze` e `POST /review-code`. A interface web em `/ui` permite enviar texto para análise e apresenta orientação e fontes. Cada resposta inclui um identificador de pedido (`X-Request-ID`) e a API regista metadados operacionais mínimos. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
 
 O projeto inclui:
 - Interface web estática servida pela própria API, sem framework JavaScript ou dependências adicionais.
@@ -20,7 +20,7 @@ O projeto inclui:
 - Validação de configuração no arranque, para evitar opções desconhecidas e timeouts inseguros.
 - Cabeçalhos HTTP de segurança nas respostas da API.
 - Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
-- Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
+- Revisão estática heurística de código como texto em `POST /review-code`, com identificadores de regra, severidade, linha e recomendações; não importa, compila nem executa o código recebido.\n- Testes de contrato verificam o esquema OpenAPI, os limites de entrada, as categorias aceites e os campos da resposta.
 
 
 - Base de conhecimento ampliada com guias defensivos sobre desenvolvimento seguro, resposta a incidentes e segurança de aplicações, com referências oficiais NIST, CISA e OWASP.
@@ -87,7 +87,7 @@ Valores inválidos fazem a aplicação falhar no arranque com uma mensagem de co
 - `GET /` — metadados do projeto.
 - `GET /health` — estado básico da API.
 - `GET /ui` — interface web.
-- `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.
+- `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.\n- `POST /review-code` — recebe código como texto e devolve achados heurísticos estáticos; não executa código nem substitui ferramentas especializadas ou revisão humana.
 
 O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é executado.
 
