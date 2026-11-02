@@ -7,7 +7,7 @@ import pytest
 
 
 KNOWLEDGE_DIR = Path(__file__).resolve().parents[1] / "knowledge"
-URL_PATTERN = re.compile(r"https://[^\\s)]+", re.IGNORECASE)
+URL_PATTERN = re.compile(r"https://[^\s)>\]]+", re.IGNORECASE)
 
 
 def _is_trusted_https_url(url: str, trusted_domains: tuple[str, ...]) -> bool:
