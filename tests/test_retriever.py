@@ -108,7 +108,7 @@ def test_retrieve_curated_security_knowledge_and_references(
 
 def test_retrieve_returns_no_sources_for_unrelated_query(tmp_path):
     (tmp_path / "guide.md").write_text(
-        "# Guia\\n\\n## Backups\\nCópias de segurança e recuperação.",
+        "# Guia\n\n## Backups\nCópias de segurança e recuperação.",
         encoding="utf-8",
     )
 
@@ -117,11 +117,11 @@ def test_retrieve_returns_no_sources_for_unrelated_query(tmp_path):
 
 def test_retrieve_uses_stable_order_for_equal_lexical_scores(tmp_path):
     (tmp_path / "b-guide.md").write_text(
-        "# Guia B\\n\\n## Segurança B\\nPrincípios de segurança.",
+        "# Guia B\n\n## Segurança B\nPrincípios de segurança.",
         encoding="utf-8",
     )
     (tmp_path / "a-guide.md").write_text(
-        "# Guia A\\n\\n## Segurança A\\nPrincípios de segurança.",
+        "# Guia A\n\n## Segurança A\nPrincípios de segurança.",
         encoding="utf-8",
     )
 
@@ -133,7 +133,7 @@ def test_retrieve_uses_stable_order_for_equal_lexical_scores(tmp_path):
 
 def test_retrieve_returns_no_embedding_results_when_similarity_is_zero(tmp_path):
     (tmp_path / "guide.md").write_text(
-        "# Guia\\n\\n## Backups\\nCópias de segurança.",
+        "# Guia\n\n## Backups\nCópias de segurança.",
         encoding="utf-8",
     )
 
