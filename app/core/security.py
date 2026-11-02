@@ -27,10 +27,18 @@ class InMemoryRateLimiter:
         self.window_seconds = window_seconds
         self._lock = Lock()
         self._windows: dict[str, tuple[float, int]] = {}
+        self._next_cleanup = 0.0
 
     def allow(self, client_id: str, now: float | None = None) -> bool:
         current = monotonic() if now is None else now
         with self._lock:
+            if current >= self._next_cleanup:
+                self._windows = {
+                    key: window
+                    for key, window in self._windows.items()
+                    if current - window[0] < self.window_seconds
+                }
+                self._next_cleanup = current + self.window_seconds
             started, count = self._windows.get(client_id, (current, 0))
             if current - started >= self.window_seconds:
                 started, count = current, 0
