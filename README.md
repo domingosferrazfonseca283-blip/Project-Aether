@@ -15,6 +15,7 @@ O projeto inclui:
 - Validação de configuração no arranque, para evitar opções desconhecidas e timeouts inseguros.
 - Cabeçalhos HTTP de segurança nas respostas da API.
 - Respostas de `POST /analyze` marcadas com `Cache-Control: no-store`.
+- Erros de validação HTTP 422 não repetem valores enviados pelo cliente; mantêm apenas localização, mensagem e tipo do erro.
 
 ## Requisitos e instalação
 
