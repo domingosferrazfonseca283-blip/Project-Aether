@@ -63,3 +63,27 @@ def test_openapi_documents_typed_security_report_response():
     ]
     assert finding_schema["properties"]["line"]["minimum"] == 1
     assert schema["paths"]["/report"]["post"]["responses"]["200"]
+
+def test_openapi_documents_typed_code_review_response():
+    schema = app.openapi()
+    review_response = schema["components"]["schemas"]["CodeReviewResponse"]
+    finding_schema = schema["components"]["schemas"]["FindingResponse"]
+
+    assert set(review_response["properties"]) == {
+        "status", "analysis_mode", "findings"
+    }
+    assert review_response["properties"]["findings"]["items"]["$ref"].endswith(
+        "/FindingResponse"
+    )
+    assert finding_schema["properties"]["severity"]["enum"] == [
+        "high", "medium", "low"
+    ]
+    assert schema["paths"]["/review-code"]["post"]["responses"]["200"]
+
+
+def test_openapi_report_timestamp_uses_date_time_format():
+    schema = app.openapi()
+    report_schema = schema["components"]["schemas"]["SecurityReportResponse"]
+
+    assert report_schema["properties"]["generated_at"]["format"] == "date-time"
+
