@@ -97,3 +97,32 @@ def test_ollama_provider_handles_connection_error(monkeypatch):
     provider = OllamaProvider(Settings())
     with pytest.raises(OllamaProviderError):
         provider.analyze("Ajuda", "general")
+
+
+def test_ollama_provider_uses_configured_timeout(monkeypatch):
+    captured = {}
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"message": {"content": "Resposta de teste."}}
+
+    class Client:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json):
+            return Response()
+
+    monkeypatch.setattr(httpx, "Client", Client)
+    provider = OllamaProvider(Settings(ollama_timeout_seconds=7.5))
+    provider.analyze("Ajuda", "general")
+    assert captured["timeout"] == 7.5
