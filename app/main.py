@@ -21,6 +21,8 @@ app = FastAPI(
     description="Assistente de IA para cibersegurança defensiva e programação.",
     version="0.6.0",
 )
+
+
 @app.middleware("http")
 async def request_observability(request, call_next):
     """Regista metadados mínimos; nunca regista corpos, query strings ou cabeçalhos."""
@@ -91,7 +93,7 @@ def root() -> dict[str, str]:
     return {
         "project": "Project Aether",
         "description": "Assistente de cibersegurança defensiva e programação",
-        "version": "0.5.0",
+        "version": "0.6.0",
     }
 
 
