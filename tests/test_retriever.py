@@ -187,3 +187,45 @@ def test_retrieve_rewards_exact_multiword_phrase(tmp_path):
 
     assert results
     assert results[0].path == "knowledge/b-guide.md"
+
+@pytest.mark.parametrize(
+    ("query", "expected_path"),
+    [
+        (
+            "menor privilégio permissões mínimas",
+            "knowledge/security-basics.md",
+        ),
+        (
+            "autenticação multifator autorização servidor",
+            "knowledge/application-security.md",
+        ),
+        (
+            "cadeia fornecimento dependências software",
+            "knowledge/secure-development.md",
+        ),
+        (
+            "contenção recuperação comunicação incidentes",
+            "knowledge/incident-response.md",
+        ),
+    ],
+)
+def test_retrieve_ranks_additional_defensive_topics_first(query, expected_path):
+    results = retrieve(query)
+
+    assert results
+    assert results[0].path == expected_path
+
+
+def test_retrieve_respects_requested_result_limit(tmp_path):
+    (tmp_path / "guide.md").write_text(
+        "# Segurança\\n\\n"
+        "## Autenticação\\nAutenticação multifator e sessões seguras.\\n\\n"
+        "## Autorização\\nAutorização no servidor e menor privilégio.\\n\\n"
+        "## Registos\\nRegistos de segurança e monitorização.",
+        encoding="utf-8",
+    )
+
+    results = retrieve("segurança autenticação autorização registos", knowledge_dir=tmp_path, limit=2)
+
+    assert len(results) == 2
+
