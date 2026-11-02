@@ -43,3 +43,23 @@ def test_openapi_analysis_response_exposes_stable_fields():
     }
     assert schema["paths"]["/analyze"]["post"]["responses"]["200"]
     assert schema["paths"]["/analyze"]["post"]["responses"]["422"]
+
+def test_openapi_documents_typed_security_report_response():
+    schema = app.openapi()
+    report_schema = schema["components"]["schemas"]["SecurityReportResponse"]
+    summary_schema = schema["components"]["schemas"]["SecurityReportSummary"]
+    finding_schema = schema["components"]["schemas"]["FindingResponse"]
+    severity_schema = schema["components"]["schemas"]["SeverityCounts"]
+
+    assert set(report_schema["properties"]) == {
+        "report_name", "generated_at", "analysis_mode", "summary", "findings"
+    }
+    assert set(summary_schema["properties"]) == {
+        "findings_total", "severity_counts", "limitations"
+    }
+    assert set(severity_schema["properties"]) == {"high", "medium", "low"}
+    assert finding_schema["properties"]["severity"]["enum"] == [
+        "high", "medium", "low"
+    ]
+    assert finding_schema["properties"]["line"]["minimum"] == 1
+    assert schema["paths"]["/report"]["post"]["responses"]["200"]
