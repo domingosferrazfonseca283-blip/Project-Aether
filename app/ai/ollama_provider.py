@@ -21,7 +21,7 @@ def build_messages(content: str, category: str, context: str = "") -> list[dict[
         "atribui uma afirmação a uma fonte quando essa fonte estiver "
         "explicitamente presente no contexto documental recuperado. Se o "
         "contexto indicar que não foram encontrados documentos relevantes, "
-        "não afirmes que consultaste fontes nem inventes citações ou URLs; "
+        "não afirmes que consultaste fontes. Não inventes citações ou URLs; "
         "explica que não foi recuperada uma fonte para a resposta. Se a "
         "informação for insuficiente ou incerta, declara essa limitação. "
         "Responde em português europeu. Estrutura a resposta com: "
