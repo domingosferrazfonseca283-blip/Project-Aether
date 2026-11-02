@@ -1,0 +1,53 @@
+import pytest
+
+from app.core.config import Settings, get_settings
+
+
+def test_default_settings_are_safe_local_defaults(monkeypatch):
+    for name in (
+        "AI_PROVIDER", "RAG_PROVIDER", "OLLAMA_BASE_URL", "OLLAMA_MODEL",
+        "OLLAMA_TIMEOUT_SECONDS", "RAG_EMBEDDING_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    settings = get_settings()
+    assert settings.ai_provider == "rules"
+    assert settings.rag_provider == "lexical"
+    assert settings.ollama_base_url == "http://127.0.0.1:11434"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"ai_provider": "unknown"},
+        {"rag_provider": "remote"},
+        {"ollama_model": " "},
+        {"rag_embedding_model": ""},
+        {"ollama_timeout_seconds": 0},
+        {"ollama_timeout_seconds": 301},
+        {"ollama_timeout_seconds": float("nan")},
+        {"ollama_timeout_seconds": float("inf")},
+        {"ollama_base_url": "file:///etc/passwd"},
+        {"ollama_base_url": "http://user:password@localhost:11434"},
+        {"ollama_base_url": "http://localhost:11434?token=secret"},
+    ],
+)
+def test_settings_reject_invalid_values(kwargs):
+    with pytest.raises(ValueError):
+        Settings(**kwargs)
+
+
+def test_get_settings_rejects_non_numeric_timeout(monkeypatch):
+    monkeypatch.setenv("OLLAMA_TIMEOUT_SECONDS", "fast")
+    with pytest.raises(ValueError, match="número"):
+        get_settings()
+
+
+def test_get_settings_normalizes_provider_and_url(monkeypatch):
+    monkeypatch.setenv("AI_PROVIDER", "OLLAMA")
+    monkeypatch.setenv("RAG_PROVIDER", "OLLAMA")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434/")
+    settings = get_settings()
+    assert settings.ai_provider == "ollama"
+    assert settings.rag_provider == "ollama"
+    assert settings.ollama_base_url == "http://localhost:11434"
