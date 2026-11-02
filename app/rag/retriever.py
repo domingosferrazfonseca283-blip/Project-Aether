@@ -77,6 +77,20 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b)) / (na * nb) if na and nb else 0.0
 
 
+def _lexical_score(query: str, title: str, body: str) -> int:
+    """Dá maior peso aos termos do título e um bónus a frases coincidentes."""
+    terms = {token.lower() for token in _TOKEN.findall(query)}
+    title_terms = {token.lower() for token in _TOKEN.findall(title)}
+    body_terms = {token.lower() for token in _TOKEN.findall(body)}
+    score = 3 * len(terms & title_terms) + len(terms & body_terms)
+    normalized_query = " ".join(sorted(terms))
+    if normalized_query and normalized_query in " ".join(
+        _TOKEN.findall(f"{title} {body}")
+    ).lower():
+        score += 2
+    return score
+
+
 def retrieve(
     query: str,
     knowledge_dir: Path | None = None,
@@ -101,11 +115,9 @@ def retrieve(
         )
         return [_source(doc) for score, doc in ranked[:limit] if score > 0]
 
-    terms = {token.lower() for token in _TOKEN.findall(query)}
     ranked = []
     for doc in docs:
-        words = {token.lower() for token in _TOKEN.findall(f"{doc[1]}\n{doc[2]}")}
-        score = len(terms & words)
+        score = _lexical_score(query, doc[1], doc[2])
         if score:
             ranked.append((score, doc))
     ranked.sort(key=lambda item: (-item[0], item[1][0], item[1][1]))
