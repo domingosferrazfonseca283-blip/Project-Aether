@@ -194,7 +194,7 @@ def health() -> dict[str, str]:
 
 
 @app.post("/analyze", response_model=AnalysisResponse)
-def analyze(request: AnalysisRequest) -> AnalysisResponse:
+def analyze(request: AnalysisRequest, http_request: Request) -> AnalysisResponse:
     try:
         sources = retrieve(request.content, embedder=embedder)
     except (OllamaEmbeddingError, ValueError):
@@ -213,7 +213,7 @@ def analyze(request: AnalysisRequest) -> AnalysisResponse:
         # Nunca devolver detalhes internos do fornecedor ao cliente.
         logger.warning(
             "analysis_provider_unavailable request_id=%s provider=%s error_type=%s",
-            getattr(request.state, "request_id", "unknown"),
+            getattr(http_request.state, "request_id", "unknown"),
             provider.name,
             type(exc).__name__,
         )
