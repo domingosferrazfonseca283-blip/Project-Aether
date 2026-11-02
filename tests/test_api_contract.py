@@ -5,13 +5,14 @@ from app.main import app
 def test_openapi_documents_expected_api_endpoints():
     schema = app.openapi()
 
-    assert schema["info"]["title"] == "Project Aether API"
+    assert schema["info"]["title"] == "Kamba API"
     assert schema["info"]["version"] == "0.6.0"
-    assert set(schema["paths"]) == {"/", "/health", "/analyze", "/review-code"}
+    assert set(schema["paths"]) == {"/", "/health", "/analyze", "/review-code", "/report"}
     assert "get" in schema["paths"]["/"]
     assert "get" in schema["paths"]["/health"]
     assert "post" in schema["paths"]["/analyze"]
     assert "post" in schema["paths"]["/review-code"]
+    assert "post" in schema["paths"]["/report"]
 
 
 def test_openapi_analysis_request_constraints_are_documented():
