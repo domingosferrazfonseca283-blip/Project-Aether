@@ -20,7 +20,7 @@ from app.rag.retriever import retrieve
 
 
 settings = get_settings()
-logger = getLogger("kamba.api")
+logger = getLogger("project_aether.api")
 app = FastAPI(
     title="Kamba API",
     description="Kamba — assistente de IA para cibersegurança defensiva e programação.",
