@@ -6,7 +6,8 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from app.ai import get_provider
@@ -23,6 +24,7 @@ app = FastAPI(
     description="Assistente de IA para cibersegurança defensiva e programação.",
     version="0.6.0",
 )
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.exception_handler(RequestValidationError)
@@ -120,6 +122,12 @@ def root() -> dict[str, str]:
         "description": "Assistente de cibersegurança defensiva e programação",
         "version": "0.6.0",
     }
+
+
+@app.get("/ui", include_in_schema=False)
+def web_interface() -> FileResponse:
+    """Serve a interface web estática, sem guardar conteúdo do utilizador."""
+    return FileResponse("app/static/index.html")
 
 
 @app.get("/health")
