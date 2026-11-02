@@ -23,3 +23,49 @@ def test_rate_limiter_tracks_clients_independently():
     assert limiter.allow("client-a", now=100)
     assert limiter.allow("client-b", now=100)
     assert not limiter.allow("client-a", now=101)
+
+from dataclasses import replace
+
+from fastapi.testclient import TestClient
+
+import app.main as main_module
+
+
+def test_protected_api_requires_configured_key(monkeypatch):
+    monkeypatch.setattr(
+        main_module, "settings",
+        replace(main_module.settings, api_key="k" * 32),
+    )
+    response = TestClient(main_module.app).post(
+        "/review-code", json={"content": "print('safe')"}
+    )
+    assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == "ApiKey"
+
+
+def test_protected_api_accepts_valid_key(monkeypatch):
+    monkeypatch.setattr(
+        main_module, "settings",
+        replace(main_module.settings, api_key="k" * 32),
+    )
+    main_module.rate_limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
+    response = TestClient(main_module.app).post(
+        "/review-code",
+        json={"content": "print('safe')"},
+        headers={"X-API-Key": "k" * 32},
+    )
+    assert response.status_code == 200
+
+
+def test_protected_api_returns_429_after_configured_limit(monkeypatch):
+    monkeypatch.setattr(
+        main_module, "settings",
+        replace(main_module.settings, api_key=""),
+    )
+    main_module.rate_limiter = InMemoryRateLimiter(limit=1, window_seconds=60)
+    client = TestClient(main_module.app)
+    first = client.post("/review-code", json={"content": "print('safe')"})
+    second = client.post("/review-code", json={"content": "print('safe')"})
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.headers["Retry-After"] == "60"
