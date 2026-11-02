@@ -2,7 +2,7 @@
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.ai import get_provider
 from app.ai.ollama_provider import OllamaProviderError
@@ -28,6 +28,13 @@ embedder = (
 class AnalysisRequest(BaseModel):
     content: str = Field(min_length=1, max_length=20_000)
     category: Literal["cybersecurity", "programming", "general"] = "general"
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("O conteúdo não pode conter apenas espaços.")
+        return value
 
 
 class SourceResponse(BaseModel):
