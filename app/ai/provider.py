@@ -1,16 +1,18 @@
-"""Contrato e fornecedor local provisório para o motor da Aether."""
+"""Contrato e fornecedor determinístico de fallback."""
 from typing import Protocol
 
 
 class AIProvider(Protocol):
-    """Interface estável para ligar modelos locais ou serviços externos."""
+    name: str
 
-    def guidance_for(self, category: str) -> list[str]:
-        """Devolve orientações iniciais para a categoria pedida."""
+    def analyze(self, content: str, category: str) -> list[str]:
+        """Analisa texto sem executar código nem realizar ações externas."""
 
 
 class RuleBasedProvider:
-    """Fornecedor determinístico; não é um modelo de linguagem nem usa rede."""
+    """Fornecedor local determinístico; não é um modelo de linguagem."""
+
+    name = "rule_based"
 
     _GUIDANCE = {
         "cybersecurity": [
@@ -30,11 +32,6 @@ class RuleBasedProvider:
         ],
     }
 
-    def guidance_for(self, category: str) -> list[str]:
-        """Retorna orientações sem executar ou enviar o conteúdo recebido."""
+    def analyze(self, content: str, category: str) -> list[str]:
+        """Devolve orientações sem enviar o conteúdo para fora do processo."""
         return list(self._GUIDANCE.get(category, self._GUIDANCE["general"]))
-
-
-def get_provider() -> AIProvider:
-    """Ponto único de composição; pode ser substituído por um modelo real."""
-    return RuleBasedProvider()
