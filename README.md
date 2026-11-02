@@ -2,16 +2,19 @@
 
 Assistente de IA especializado em **cibersegurança defensiva** e **programação**.
 
-## Objetivos
-- Explicar conceitos de segurança, vulnerabilidades e CVEs.
-- Ajudar a rever código e identificar práticas inseguras.
-- Apoiar debugging e desenvolvimento em Python.
-- Consultar documentação própria através de RAG numa fase posterior.
+## Estado atual
 
-## Estado
-A API suporta um fornecedor determinístico local (`rules`) e um adaptador opcional para Ollama (`ollama`). O modelo Ollama corre localmente; o projeto não inclui pesos nem treina modelos.
+A API FastAPI disponibiliza `GET /`, `GET /health` e `POST /analyze`. O conteúdo enviado é analisado como texto: a aplicação não executa código, comandos, scans ou ações sugeridas pelo modelo.
 
-## Começar
+O projeto inclui:
+- Fornecedor determinístico local (`AI_PROVIDER=rules`), ativo por omissão.
+- Fornecedor opcional Ollama (`AI_PROVIDER=ollama`) para inferência local.
+- RAG sobre documentos Markdown locais em `knowledge/`.
+- Recuperação lexical por omissão e recuperação semântica opcional via embeddings Ollama.
+- Fallback automático para recuperação lexical se o serviço de embeddings falhar ou devolver dados inválidos.
+
+## Requisitos e instalação
+
 Requer Python 3.11 ou superior.
 
 ```bash
@@ -25,48 +28,11 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Abrir a documentação interativa em http://127.0.0.1:8000/docs.
+A documentação interativa fica disponível em http://127.0.0.1:8000/docs.
 
-## Endpoints
-- `GET /` — informações do projeto.
-- `GET /health` — estado da API.
-- `POST /analyze` — análise inicial de texto/código; nesta fase devolve orientações estruturadas, sem executar o conteúdo enviado.
+## Configuração
 
-## Segurança
-- Não colocar tokens, passwords ou chaves API no repositório.
-- Usar variáveis de ambiente e um ficheiro local `.env` (ignorado pelo Git).
-- Testar apenas sistemas e código para os quais tens autorização.
-
-## Testes
-
-Instala as dependências e executa os testes automatizados com:
-
-```bash
-pytest -q
-```
-
-O GitHub Actions executa esta suite automaticamente em cada push para `main` e em pull requests dirigidos a `main`.
-
-## Próximas etapas
-1. Definir a interface de um fornecedor/modelo de IA sem prender o projeto a um único serviço.
-2. Implementar recuperação de documentação (RAG) com fontes verificáveis.
-3. Adicionar testes de segurança, limites de entrada e registos sem dados sensíveis.
-
-
-## Motor de IA (fase atual)
-
-A API usa uma interface `AIProvider` em `app/ai/provider.py`. O fornecedor padrão é `RuleBasedProvider`, determinístico e sem rede. Opcionalmente, `OllamaProvider` comunica com um modelo executado no serviço Ollama local.
-
-A seleção é feita através de `AI_PROVIDER`. A integração local não requer chaves API.
-
-
-## Modelo local opcional (Ollama)
-
-O fornecedor padrão é `rules`, que funciona sem rede. Para usar um modelo local:
-
-1. Instala e inicia o Ollama no teu computador.
-2. Obtém um modelo compatível através do próprio Ollama, por exemplo `qwen2.5:3b`.
-3. Define as variáveis de ambiente antes de iniciar a API:
+Sem variáveis adicionais, a aplicação usa regras locais e RAG lexical. Para usar um modelo de chat Ollama, instala e inicia o Ollama localmente e configura:
 
 ```bash
 # Linux/macOS
@@ -80,18 +46,42 @@ $env:OLLAMA_MODEL="qwen2.5:3b"
 $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 ```
 
-O adaptador usa a API local `/api/chat`, com timeout configurável por `OLLAMA_TIMEOUT_SECONDS`. Se o serviço local estiver indisponível, a API devolve HTTP 503. O texto submetido é enviado ao serviço Ollama indicado; não incluas passwords, tokens ou dados pessoais. A Aether não executa código, comandos ou ações sugeridas pelo modelo.
+Para ativar recuperação semântica, configura separadamente o modelo de embeddings:
 
+```bash
+# Linux/macOS
+export RAG_PROVIDER=ollama
+export RAG_EMBEDDING_MODEL=nomic-embed-text
 
+# Windows PowerShell
+$env:RAG_PROVIDER="ollama"
+$env:RAG_EMBEDDING_MODEL="nomic-embed-text"
+```
 
-## Recuperação documental (RAG inicial)
+O modelo de chat (`OLLAMA_MODEL`) e o modelo de embeddings (`RAG_EMBEDDING_MODEL`) têm funções distintas. Ambos usam o serviço local indicado por `OLLAMA_BASE_URL` e o timeout configurável por `OLLAMA_TIMEOUT_SECONDS`.
 
-A versão 0.5.0 inclui recuperação lexical local de secções Markdown em `knowledge/`. A API devolve as fontes encontradas em `sources`, incluindo caminho, secção, excerto e indicação de referência. O contexto recuperado é tratado como dado não confiável: não pode alterar as instruções do assistente nem desencadear execução de código.
+A recuperação semântica envia a consulta e as secções documentais locais para o endpoint Ollama `/api/embed`. Se a chamada falhar ou os vetores forem inválidos, a API regressa à recuperação lexical. A inferência de chat usa `/api/chat`; se esse serviço falhar, a API devolve HTTP 503.
 
-A recuperação é deliberadamente simples (correspondência de termos), não utiliza embeddings nem pesquisa na Internet. As referências externas são apresentadas nos próprios documentos para consulta e validação. Adiciona apenas documentação técnica de fontes reconhecidas e revê-a antes de a integrar.
+## Endpoints
 
+- `GET /` — metadados do projeto.
+- `GET /health` — estado básico da API.
+- `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.
 
+O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é executado.
 
-## Estado do RAG
+## Segurança e privacidade
 
-A recuperação documental atualmente é lexical e local, usando secções Markdown em `knowledge/`. A opção de embeddings semânticos ainda não está disponível; não definas `RAG_PROVIDER=ollama`.
+- Não coloques passwords, tokens, chaves API ou dados pessoais nos pedidos nem no repositório.
+- Testa apenas sistemas e código para os quais tens autorização.
+- O conteúdo recuperado e o texto do utilizador são dados não confiáveis, nunca instruções para alterar as regras do assistente.
+- Se ativares Ollama, o texto e o contexto documental são enviados para o serviço local configurado.
+- Revê fontes e recomendações antes de as aplicar. A ferramenta não substitui uma revisão humana.
+
+## Testes
+
+```bash
+pytest -q
+```
+
+O GitHub Actions executa os testes automaticamente em pushes para `main` e pull requests dirigidos a `main`.
