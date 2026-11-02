@@ -11,7 +11,7 @@ def test_root_returns_project_metadata() -> None:
 
     assert response.status_code == 200
     assert response.json()["project"] == "Project Aether"
-    assert response.json()["version"] == "0.3.0"
+    assert response.json()["version"] == "0.4.0"
 
 
 def test_health_check() -> None:
@@ -59,3 +59,16 @@ def test_cybersecurity_category_returns_defensive_guidance() -> None:
     assert response.status_code == 200
     guidance = " ".join(response.json()["guidance"]).lower()
     assert "autorização" in guidance
+
+
+def test_analyze_returns_retrieved_sources():
+    response = client.post(
+        "/analyze",
+        json={"content": "Como aplicar o princípio do menor privilégio?", "category": "cybersecurity"},
+    )
+
+    assert response.status_code == 200
+    sources = response.json()["sources"]
+    assert sources
+    assert sources[0]["path"].startswith("knowledge/")
+    assert sources[0]["reference"].startswith("Ver referências")
