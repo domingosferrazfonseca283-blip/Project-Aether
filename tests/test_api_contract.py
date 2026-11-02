@@ -7,10 +7,11 @@ def test_openapi_documents_expected_api_endpoints():
 
     assert schema["info"]["title"] == "Project Aether API"
     assert schema["info"]["version"] == "0.6.0"
-    assert set(schema["paths"]) == {"/", "/health", "/analyze"}
+    assert set(schema["paths"]) == {"/", "/health", "/analyze", "/review-code"}
     assert "get" in schema["paths"]["/"]
     assert "get" in schema["paths"]["/health"]
     assert "post" in schema["paths"]["/analyze"]
+    assert "post" in schema["paths"]["/review-code"]
 
 
 def test_openapi_analysis_request_constraints_are_documented():
