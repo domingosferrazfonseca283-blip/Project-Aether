@@ -62,4 +62,7 @@ def test_analyze_returns_503_when_chat_provider_is_unavailable(monkeypatch):
         json={"content": "Explica o princípio do menor privilégio"},
     )
     assert response.status_code == 503
-    assert response.json()["detail"] == "serviço local indisponível"
+    assert response.json()["detail"] == "Não foi possível obter resposta do modelo local."
+    assert "serviço local indisponível" not in response.text
+    assert response.headers["X-Request-ID"]
+    assert response.headers["Cache-Control"] == "no-store"
