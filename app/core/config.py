@@ -35,10 +35,20 @@ class Settings:
             or not 0 < self.ollama_timeout_seconds <= 300
         ):
             raise ValueError("OLLAMA_TIMEOUT_SECONDS deve estar entre 0 e 300 segundos.")
-        parsed = urlsplit(self.ollama_base_url)
+        try:
+            parsed = urlsplit(self.ollama_base_url)
+            hostname = parsed.hostname
+            # Accessing .port also validates numeric syntax and the 0-65535 range.
+            parsed.port
+        except ValueError as exc:
+            raise ValueError(
+                "OLLAMA_BASE_URL deve ser um URL HTTP(S) válido, sem credenciais."
+            ) from exc
+
         if (
             parsed.scheme not in {"http", "https"}
-            or not parsed.hostname
+            or not hostname
+            or any(character.isspace() for character in hostname)
             or parsed.username is not None
             or parsed.password is not None
             or parsed.query
