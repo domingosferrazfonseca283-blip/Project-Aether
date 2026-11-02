@@ -1,4 +1,5 @@
-"""API do Project Aether. Não executa código nem realiza scans."""
+"""API do Kamba. Não executa código nem realiza scans."""
+from datetime import datetime, timezone
 from logging import getLogger
 from time import perf_counter
 from typing import Literal
@@ -19,10 +20,10 @@ from app.rag.retriever import retrieve
 
 
 settings = get_settings()
-logger = getLogger("project_aether.api")
+logger = getLogger("kamba.api")
 app = FastAPI(
-    title="Project Aether API",
-    description="Assistente de IA para cibersegurança defensiva e programação.",
+    title="Kamba API",
+    description="Kamba — assistente de IA para cibersegurança defensiva e programação.",
     version="0.6.0",
 )
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -112,6 +113,17 @@ class CodeReviewRequest(BaseModel):
         return value
 
 
+class SecurityReportRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=20_000)
+
+    @field_validator("content")
+    @classmethod
+    def report_content_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("O código não pode conter apenas espaços.")
+        return value
+
+
 class CodeReviewResponse(BaseModel):
     status: str
     analysis_mode: str
@@ -136,7 +148,8 @@ class AnalysisResponse(BaseModel):
 @app.get("/")
 def root() -> dict[str, str]:
     return {
-        "project": "Project Aether",
+        "project": "Kamba",
+        "previous_project_name": "Project Aether",
         "description": "Assistente de cibersegurança defensiva e programação",
         "version": "0.6.0",
     }
@@ -201,3 +214,28 @@ def review_submitted_code(request: CodeReviewRequest) -> CodeReviewResponse:
         analysis_mode="static_text_only",
         findings=findings,
     )
+
+
+@app.post("/report", response_model=dict[str, object])
+def generate_security_report(request: SecurityReportRequest) -> dict[str, object]:
+    """Gera um relatório estruturado a partir da revisão estática; não executa o código."""
+    findings = review_code(request.content)
+    counts = {
+        severity: sum(1 for item in findings if item["severity"] == severity)
+        for severity in ("high", "medium", "low")
+    }
+    return {
+        "report_name": "Kamba — Relatório de revisão estática",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "analysis_mode": "static_text_only",
+        "summary": {
+            "findings_total": len(findings),
+            "severity_counts": counts,
+            "limitations": [
+                "Análise heurística baseada em padrões; pode produzir falsos positivos e falsos negativos.",
+                "Não executa, importa ou compila o código submetido.",
+                "Não substitui SAST especializado nem revisão humana.",
+            ],
+        },
+        "findings": findings,
+    }
