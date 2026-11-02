@@ -209,7 +209,16 @@ def analyze(request: AnalysisRequest) -> AnalysisResponse:
             request.content, request.category, context=context
         )
     except OllamaProviderError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        # Nunca devolver detalhes internos do fornecedor ao cliente.
+        logger.warning(
+            "analysis_provider_unavailable provider=%s error_type=%s",
+            provider.name,
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível obter resposta do modelo local.",
+        ) from exc
 
     return AnalysisResponse(
         category=request.category,
