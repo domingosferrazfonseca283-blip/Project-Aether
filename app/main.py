@@ -4,7 +4,9 @@ from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from app.ai import get_provider
@@ -21,6 +23,22 @@ app = FastAPI(
     description="Assistente de IA para cibersegurança defensiva e programação.",
     version="0.6.0",
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_response(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Devolve erros de validação sem ecoar valores enviados pelo cliente."""
+    errors = [
+        {
+            "loc": list(error.get("loc", ())),
+            "msg": error.get("msg", "Dados inválidos."),
+            "type": error.get("type", "value_error"),
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 @app.middleware("http")
