@@ -27,6 +27,9 @@ def test_default_settings_are_safe_local_defaults(monkeypatch):
         {"ollama_timeout_seconds": 301},
         {"ollama_timeout_seconds": float("nan")},
         {"ollama_timeout_seconds": float("inf")},
+        {"ollama_num_predict": 0},
+        {"ollama_num_predict": 8193},
+        {"ollama_num_predict": True},
         {"ollama_base_url": "file:///etc/passwd"},
         {"ollama_base_url": "http://user:password@localhost:11434"},
         {"ollama_base_url": "http://localhost:11434?token=secret"},
@@ -72,4 +75,15 @@ def test_get_settings_rejects_non_integer_rate_limits(monkeypatch, variable, mes
 def test_get_settings_rejects_non_positive_rate_limits(monkeypatch):
     monkeypatch.setenv("KAMBA_RATE_LIMIT_REQUESTS", "0")
     with pytest.raises(ValueError, match="inteiros positivos"):
+        get_settings()
+
+
+def test_get_settings_reads_ollama_generation_limit(monkeypatch):
+    monkeypatch.setenv("OLLAMA_NUM_PREDICT", "768")
+    assert get_settings().ollama_num_predict == 768
+
+
+def test_get_settings_rejects_non_integer_ollama_generation_limit(monkeypatch):
+    monkeypatch.setenv("OLLAMA_NUM_PREDICT", "many")
+    with pytest.raises(ValueError, match="OLLAMA_NUM_PREDICT"):
         get_settings()
