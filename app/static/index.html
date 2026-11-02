@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Project Aether</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <p class="eyebrow">PROJECT AETHER · ASSISTENTE DEFENSIVO</p>
+      <h1>Análise e orientação</h1>
+      <p class="intro">Descreve uma dúvida de cibersegurança defensiva ou programação. O conteúdo é tratado como texto e não é executado.</p>
+    </header>
+    <form id="analysis-form">
+      <label for="category">Categoria</label>
+      <select id="category" name="category">
+        <option value="cybersecurity">Cibersegurança defensiva</option>
+        <option value="programming">Programação</option>
+        <option value="general" selected>Geral</option>
+      </select>
+      <label for="content">O que pretendes analisar?</label>
+      <textarea id="content" name="content" rows="8" maxlength="20000" required placeholder="Escreve a tua questão (máximo de 20 000 caracteres). Não incluas passwords, tokens ou dados pessoais."></textarea>
+      <div class="form-footer">
+        <span id="char-count" aria-live="polite">0 / 20 000</span>
+        <button id="submit-button" type="submit">Analisar</button>
+      </div>
+    </form>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <section id="result" hidden aria-labelledby="result-title">
+      <h2 id="result-title">Orientação</h2>
+      <p id="provider" class="provider"></p>
+      <ul id="guidance"></ul>
+      <h2>Fontes consultadas</h2>
+      <ul id="sources"></ul>
+    </section>
+    <footer>Não introduzas informação confidencial. Revê sempre as recomendações antes de as aplicares.</footer>
+  </main>
+</body>
+</html>
