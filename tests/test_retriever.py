@@ -248,3 +248,45 @@ def test_source_ids_are_stable_and_unique_for_duplicate_headings(tmp_path):
     ]
     assert all(source.source_id.startswith("guide.md#") for source in first)
     assert all(source.path == "knowledge/guide.md" for source in first)
+
+
+
+def test_retrieval_evaluation_compares_lexical_and_semantic_paraphrases(tmp_path):
+    (tmp_path / "a-access.md").write_text(
+        "# Acesso\\n\\n## Controlo de acesso\\n"
+        "Autenticação multifator e autorização por função.",
+        encoding="utf-8",
+    )
+    (tmp_path / "b-recovery.md").write_text(
+        "# Recuperação\\n\\n## Cópias de segurança\\n"
+        "Cópias de segurança permitem recuperar informação após falhas.",
+        encoding="utf-8",
+    )
+
+    # Consulta lexical: os termos presentes no documento devem recuperar a fonte.
+    lexical = retrieve(
+        "cópias segurança recuperar informação",
+        knowledge_dir=tmp_path,
+        limit=2,
+    )
+    assert lexical
+    assert lexical[0].path == "knowledge/b-recovery.md"
+
+    # Consulta semanticamente equivalente sem palavras partilhadas com o texto.
+    class ControlledSemanticEmbedder:
+        def embed(self, texts):
+            assert texts[0] == "restaurar dados depois de uma avaria"
+            # O vetor do documento de recuperação é intencionalmente próximo
+            # do vetor da consulta; o documento de acesso é um distrator.
+            return [[1.0, 0.0], [0.0, 1.0], [0.98, 0.02]]
+
+    paraphrase = "restaurar dados depois de uma avaria"
+    assert retrieve(paraphrase, knowledge_dir=tmp_path) == []
+    semantic = retrieve(
+        paraphrase,
+        knowledge_dir=tmp_path,
+        limit=2,
+        embedder=ControlledSemanticEmbedder(),
+    )
+    assert semantic
+    assert semantic[0].path == "knowledge/b-recovery.md"
