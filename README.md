@@ -107,6 +107,10 @@ O campo `content` aceita entre 1 e 20 000 caracteres. O conteúdo não é execut
 - Se ativares Ollama, o texto e o contexto documental são enviados para o serviço configurado. Confirma que o URL aponta para uma instância de confiança.
 - Revê fontes e recomendações antes de as aplicar. A ferramenta não substitui uma revisão humana.
 
+## Aplicação Android
+
+O contrato da API, a arquitetura prevista e os critérios de preparação do cliente Android estão documentados em [docs/ANDROID_CLIENT_PLAN.md](docs/ANDROID_CLIENT_PLAN.md). A aplicação Android ainda não foi criada; o backend continua independente da tecnologia do cliente.
+
 ## Testes de integração Ollama (opcionais)
 
 Os testes unitários usam clientes simulados. Para validar uma instância Ollama real, inicia o serviço local e instala os modelos definidos por `OLLAMA_MODEL` e `RAG_EMBEDDING_MODEL`. Depois executa explicitamente:
