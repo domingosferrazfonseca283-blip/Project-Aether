@@ -275,12 +275,12 @@ def test_retrieval_evaluation_compares_lexical_and_semantic_paraphrases(tmp_path
     # Consulta semanticamente equivalente sem palavras partilhadas com o texto.
     class ControlledSemanticEmbedder:
         def embed(self, texts):
-            assert texts[0] == "reconstituir arquivos após pane"
+            assert texts[0] == "reconstituir arquivos pane"
             # O vetor do documento de recuperação é intencionalmente próximo
             # do vetor da consulta; o documento de acesso é um distrator.
             return [[1.0, 0.0], [0.0, 1.0], [0.98, 0.02]]
 
-    paraphrase = "reconstituir arquivos após pane"
+    paraphrase = "reconstituir arquivos pane"
     assert retrieve(paraphrase, knowledge_dir=tmp_path) == []
     semantic = retrieve(
         paraphrase,
