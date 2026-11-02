@@ -11,7 +11,7 @@ def test_root_returns_project_metadata() -> None:
 
     assert response.status_code == 200
     assert response.json()["project"] == "Project Aether"
-    assert response.json()["version"] == "0.1.0"
+    assert response.json()["version"] == "0.2.0"
 
 
 def test_health_check() -> None:
@@ -31,6 +31,7 @@ def test_analyze_returns_safe_starter_guidance() -> None:
     body = response.json()
     assert body["category"] == "programming"
     assert body["status"] == "starter_mode"
+    assert body["provider"] == "rule_based_placeholder"
     assert len(body["guidance"]) >= 3
 
 
@@ -47,3 +48,14 @@ def test_analyze_rejects_unknown_category() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_cybersecurity_category_returns_defensive_guidance() -> None:
+    response = client.post(
+        "/analyze",
+        json={"content": "Como proteger a minha aplicação?", "category": "cybersecurity"},
+    )
+
+    assert response.status_code == 200
+    guidance = " ".join(response.json()["guidance"]).lower()
+    assert "autorização" in guidance
