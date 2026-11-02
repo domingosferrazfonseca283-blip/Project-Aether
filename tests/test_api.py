@@ -137,3 +137,30 @@ def test_analyze_falls_back_to_lexical_retrieval(
     assert sources
     assert sources[0]["path"] == "knowledge/guide.md"
     assert sources[0]["title"] == "Menor privilégio"
+
+
+def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch):
+    import app.main as main
+    from app.ai.ollama_provider import OllamaProviderError
+
+    class UnavailableProvider:
+        name = "ollama_local"
+
+        def analyze(self, content, category, context=""):
+            raise OllamaProviderError(
+                "Não foi possível obter resposta do modelo local."
+            )
+
+    monkeypatch.setattr(main, "provider", UnavailableProvider())
+    response = client.post(
+        "/analyze",
+        json={"content": "Explica como proteger uma API.", "category": "cybersecurity"},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Não foi possível obter resposta do modelo local."
+    }
+    assert response.headers["X-Request-ID"]
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
