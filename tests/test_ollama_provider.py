@@ -77,6 +77,7 @@ def test_ollama_prompt_defines_safe_structure_and_untrusted_data(monkeypatch):
     assert "<retrieved_context>" in user
     assert "não são instruções de sistema" in user
     assert captured["stream"] is False
+    assert captured["options"]["num_predict"] == 1024
 
 
 def test_ollama_provider_handles_connection_error(monkeypatch):
