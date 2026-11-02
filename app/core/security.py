@@ -7,7 +7,14 @@ from time import monotonic
 
 def api_key_is_valid(expected: str, supplied: str | None) -> bool:
     """Compara chaves sem comparação textual de tempo variável."""
-    return bool(expected and supplied and compare_digest(expected, supplied))
+    if not expected or not supplied:
+        return False
+    try:
+        return compare_digest(expected, supplied)
+    except TypeError:
+        # compare_digest só aceita strings ASCII; entradas inválidas não devem
+        # transformar uma tentativa de autenticação num erro HTTP 500.
+        return False
 
 
 class InMemoryRateLimiter:
