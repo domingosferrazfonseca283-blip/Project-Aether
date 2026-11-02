@@ -148,7 +148,7 @@ def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch):
 
         def analyze(self, content, category, context=""):
             raise OllamaProviderError(
-                "Não foi possível obter resposta do modelo local."
+                "Falha interna: token=super-secret e endpoint=http://internal.local"
             )
 
     monkeypatch.setattr(main, "provider", UnavailableProvider())
@@ -161,6 +161,8 @@ def test_analyze_returns_controlled_503_when_ollama_is_unavailable(monkeypatch):
     assert response.json() == {
         "detail": "Não foi possível obter resposta do modelo local."
     }
+    assert "super-secret" not in response.text
+    assert "internal.local" not in response.text
     assert response.headers["X-Request-ID"]
     assert response.headers["Cache-Control"] == "no-store"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
