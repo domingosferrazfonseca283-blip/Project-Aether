@@ -71,6 +71,10 @@ def test_protected_api_returns_429_after_configured_limit(monkeypatch):
     assert first.status_code == 200
     assert second.status_code == 429
     assert second.headers["Retry-After"] == "60"
+    assert second.headers["X-Request-ID"]
+    assert second.headers["Cache-Control"] == "no-store"
+    assert second.headers["X-Content-Type-Options"] == "nosniff"
+    assert second.headers["X-Frame-Options"] == "DENY"
 
 def test_invalid_api_keys_are_also_rate_limited(monkeypatch):
     monkeypatch.setattr(
