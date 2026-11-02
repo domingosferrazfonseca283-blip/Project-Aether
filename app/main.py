@@ -1,18 +1,16 @@
-"""API inicial do Project Aether.
-
-Esta versão não executa código submetido nem realiza scans em sistemas.
-"""
+"""API do Project Aether. Não executa código nem realiza scans."""
 from typing import Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app.ai import get_provider
+from app.ai.ollama_provider import OllamaProviderError
 
 app = FastAPI(
     title="Project Aether API",
     description="Assistente de IA para cibersegurança defensiva e programação.",
-    version="0.2.0",
+    version="0.3.0",
 )
 provider = get_provider()
 
@@ -34,7 +32,7 @@ def root() -> dict[str, str]:
     return {
         "project": "Project Aether",
         "description": "Assistente de cibersegurança defensiva e programação",
-        "version": "0.2.0",
+        "version": "0.3.0",
     }
 
 
@@ -45,10 +43,15 @@ def health() -> dict[str, str]:
 
 @app.post("/analyze", response_model=AnalysisResponse)
 def analyze(request: AnalysisRequest) -> AnalysisResponse:
-    """Devolve orientação inicial sem executar o conteúdo submetido."""
+    """Analisa texto com o fornecedor configurado, sem executar o conteúdo."""
+    try:
+        guidance = provider.analyze(request.content, request.category)
+    except OllamaProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     return AnalysisResponse(
         category=request.category,
-        status="starter_mode",
-        provider="rule_based_placeholder",
-        guidance=provider.guidance_for(request.category),
+        status="completed" if provider.name == "ollama_local" else "starter_mode",
+        provider=provider.name,
+        guidance=guidance,
     )
