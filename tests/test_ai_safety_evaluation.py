@@ -58,6 +58,7 @@ def test_prompt_builder_does_not_add_tool_or_execution_messages():
     assert all(message["role"] in {"system", "user"} for message in messages)
     assert "tools" not in str(messages).lower()
 
+
 @pytest.mark.parametrize(
     "hostile_context",
     [
@@ -77,3 +78,38 @@ def test_hostile_document_cannot_create_a_new_system_message(hostile_context):
     assert messages[0]["content"] == baseline[0]["content"]
     assert hostile_context in messages[1]["content"]
     assert hostile_context not in messages[0]["content"]
+
+
+def test_prompt_requires_source_grounding_and_disclosure_when_context_is_empty():
+    messages = build_messages(
+        "Quais são as recomendações oficiais?",
+        "cybersecurity",
+        "",
+    )
+
+    system = messages[0]["content"].lower()
+    user = messages[1]["content"]
+
+    assert "explicitamente presente no contexto documental recuperado" in system
+    assert "não inventes citações ou urls" in system
+    assert "não afirmes que consultaste fontes" in system
+    assert "sem documentos relevantes." in user.lower()
+
+
+def test_prompt_allows_only_sources_present_in_retrieved_context():
+    source_context = (
+        "[Documento: knowledge/security-basics.md | Secção: Menor privilégio] "
+        "Referência: https://www.cisa.gov/example"
+    )
+    messages = build_messages(
+        "Resume a recomendação e identifica a fonte.",
+        "cybersecurity",
+        source_context,
+    )
+
+    system = messages[0]["content"].lower()
+    user = messages[1]["content"]
+
+    assert "só atribui uma afirmação a uma fonte" in system
+    assert source_context in user
+    assert source_context not in messages[0]["content"]
