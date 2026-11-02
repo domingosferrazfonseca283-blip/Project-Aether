@@ -113,3 +113,32 @@ def test_ollama_embedder_wraps_malformed_responses(monkeypatch, response):
 def test_ollama_embedder_rejects_empty_input(texts):
     with pytest.raises(OllamaEmbeddingError):
         OllamaEmbedder(Settings()).embed(texts)
+
+
+def test_ollama_embedder_uses_configured_timeout(monkeypatch):
+    captured = {}
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"embeddings": [[0.1, 0.2]]}
+
+    class Client:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, json):
+            return Response()
+
+    monkeypatch.setattr(httpx, "Client", Client)
+    embedder = OllamaEmbedder(Settings(ollama_timeout_seconds=12.5))
+    assert embedder.embed(["query"]) == [[0.1, 0.2]]
+    assert captured["timeout"] == 12.5
