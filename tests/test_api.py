@@ -207,3 +207,34 @@ def test_analyze_passes_retrieved_context_to_ai_provider(monkeypatch):
     assert "Princípio do menor privilégio" in captured["context"]
     assert response.json()["sources"]
 
+
+def test_analyze_marks_context_empty_when_no_sources_are_retrieved(monkeypatch):
+    import app.main as main
+
+    captured = {}
+
+    class CapturingProvider:
+        name = "ollama_local"
+
+        def analyze(self, content, category, context=""):
+            captured["context"] = context
+            return ["Não foram recuperadas fontes para esta pergunta."]
+
+    monkeypatch.setattr(main, "retrieve", lambda query, embedder=None: [])
+    monkeypatch.setattr(main, "provider", CapturingProvider())
+
+    response = client.post(
+        "/analyze",
+        json={
+            "content": "Pergunta sem correspondência na base documental.",
+            "category": "cybersecurity",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sources"] == []
+    assert captured["context"] == ""
+    assert response.json()["guidance"] == [
+        "Não foram recuperadas fontes para esta pergunta."
+    ]
+
