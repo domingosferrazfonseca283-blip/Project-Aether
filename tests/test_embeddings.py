@@ -84,14 +84,15 @@ def test_ollama_embedder_wraps_http_status_errors(monkeypatch):
     assert isinstance(error.value.__cause__, httpx.HTTPStatusError)
 
 
-def test_ollama_embedder_wraps_timeout_errors(monkeypatch):
+@pytest.mark.parametrize("error_type", [httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError])
+def test_ollama_embedder_wraps_transport_errors(monkeypatch, error_type):
     def handler(request):
-        raise httpx.ReadTimeout("simulated timeout", request=request)
+        raise error_type("simulated transport failure", request=request)
 
     _install_transport(monkeypatch, handler)
     with pytest.raises(OllamaEmbeddingError) as error:
         OllamaEmbedder(Settings(ollama_timeout_seconds=1)).embed(["query"])
-    assert isinstance(error.value.__cause__, httpx.ReadTimeout)
+    assert isinstance(error.value.__cause__, error_type)
 
 
 @pytest.mark.parametrize(
