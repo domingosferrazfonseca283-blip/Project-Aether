@@ -13,6 +13,7 @@ O projeto inclui:
 - O browser não guarda pedidos em armazenamento local ou de sessão; as respostas de análise usam `Cache-Control: no-store`.
 - Fornecedor determinístico local (`AI_PROVIDER=rules`), ativo por omissão.
 - Fornecedor opcional Ollama (`AI_PROVIDER=ollama`) para inferência local.
+- O prompt do fornecedor Ollama pede explicações estruturadas, passos defensivos, verificação e limitações; instrui o modelo a não inventar fontes nem seguir instruções embutidas no pedido ou nos documentos recuperados.
 - RAG sobre documentos Markdown locais em `knowledge/`.
 - Recuperação lexical por omissão e recuperação semântica opcional via embeddings Ollama.
 - Fallback para recuperação lexical se embeddings falharem ou forem inválidos.
