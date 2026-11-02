@@ -1,5 +1,7 @@
 from app.rag.retriever import retrieve
 
+import pytest
+
 
 def test_retrieve_returns_matching_markdown_sections(tmp_path):
     (tmp_path / "guide.md").write_text(
@@ -29,7 +31,6 @@ def test_retrieve_uses_embedding_similarity(tmp_path):
     class FakeEmbedder:
         def embed(self, texts):
             assert len(texts) == 3
-            # A consulta é semanticamente próxima do segundo documento.
             return [[1.0, 0.0], [0.0, 1.0], [0.9, 0.1]]
 
     results = retrieve(
@@ -48,6 +49,27 @@ def test_retrieve_rejects_wrong_embedding_count(tmp_path):
         def embed(self, texts):
             return [[1.0, 0.0]]
 
-    import pytest
-    with pytest.raises(ValueError, match="embeddings"):
+    with pytest.raises(ValueError, match="Quantidade"):
+        retrieve("recuperação", knowledge_dir=tmp_path, embedder=FakeEmbedder())
+
+
+@pytest.mark.parametrize(
+    "vectors",
+    [
+        [[1.0, 0.0], [0.0]],
+        [[1.0, 0.0], [float("nan"), 1.0]],
+        [[1.0, 0.0], [float("inf"), 1.0]],
+        [[True, 0.0], [0.0, 1.0]],
+    ],
+)
+def test_retrieve_rejects_invalid_embedding_vectors(tmp_path, vectors):
+    (tmp_path / "guide.md").write_text(
+        "# Guia\n\n## Backups\nCópias de segurança.", encoding="utf-8"
+    )
+
+    class FakeEmbedder:
+        def embed(self, texts):
+            return vectors
+
+    with pytest.raises(ValueError, match="embeddings|Embeddings|Dimensões"):
         retrieve("recuperação", knowledge_dir=tmp_path, embedder=FakeEmbedder())
