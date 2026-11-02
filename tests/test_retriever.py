@@ -73,3 +73,33 @@ def test_retrieve_rejects_invalid_embedding_vectors(tmp_path, vectors):
 
     with pytest.raises(ValueError, match="embeddings|Embeddings|Dimensões"):
         retrieve("recuperação", knowledge_dir=tmp_path, embedder=FakeEmbedder())
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_path", "reference"),
+    [
+        (
+            "SSDF desenvolvimento seguro software",
+            "knowledge/secure-development.md",
+            "https://csrc.nist.gov/pubs/sp/800/218/final",
+        ),
+        (
+            "NIST resposta incidentes gestão risco",
+            "knowledge/incident-response.md",
+            "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+        ),
+        (
+            "OWASP riscos aplicações web versão 2025",
+            "knowledge/application-security.md",
+            "https://owasp.org/projects/top-ten/",
+        ),
+    ],
+)
+def test_retrieve_curated_security_knowledge_and_references(
+    query, expected_path, reference
+):
+    results = retrieve(query)
+
+    assert results
+    assert any(source.path == expected_path for source in results)
+    assert any(reference in source.excerpt for source in results)
