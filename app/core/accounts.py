@@ -18,7 +18,7 @@ MAX_PASSWORD_LENGTH = 128
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 _INSERT_USER = (
-    "INSERT INTO users (email, password_hash, salt, iterations, created_at) "
+    "INSERT INTO assistant_users (email, password_hash, salt, iterations, created_at) "
     "VALUES (?, ?, ?, ?, ?)"
 )
 
@@ -96,16 +96,16 @@ class AccountStore:
 
     def _schema(self) -> list[str]:
         return [
-            "CREATE TABLE IF NOT EXISTS users ("
+            "CREATE TABLE IF NOT EXISTS assistant_users ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "email TEXT NOT NULL UNIQUE, "
             "password_hash TEXT NOT NULL, "
             "salt TEXT NOT NULL, "
             "iterations INTEGER NOT NULL, "
             "created_at TEXT NOT NULL)",
-            "CREATE TABLE IF NOT EXISTS tokens ("
+            "CREATE TABLE IF NOT EXISTS assistant_tokens ("
             "token_hash TEXT PRIMARY KEY, "
-            "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
+            "user_id INTEGER NOT NULL REFERENCES assistant_users(id) ON DELETE CASCADE, "
             "expires_at REAL NOT NULL)",
         ]
 
@@ -154,7 +154,7 @@ class AccountStore:
             row = conn.execute(
                 self._q(
                     "SELECT id, password_hash, salt, iterations "
-                    "FROM users WHERE email = ?"
+                    "FROM assistant_users WHERE email = ?"
                 ),
                 (email,),
             ).fetchone()
@@ -172,11 +172,11 @@ class AccountStore:
         expires_at = time.time() + self.token_ttl_seconds
         with closing(self._connect()) as conn, conn:
             conn.execute(
-                self._q("DELETE FROM tokens WHERE expires_at <= ?"), (time.time(),)
+                self._q("DELETE FROM assistant_tokens WHERE expires_at <= ?"), (time.time(),)
             )
             conn.execute(
                 self._q(
-                    "INSERT INTO tokens (token_hash, user_id, expires_at) "
+                    "INSERT INTO assistant_tokens (token_hash, user_id, expires_at) "
                     "VALUES (?, ?, ?)"
                 ),
                 (_token_hash(token), user_id, expires_at),
@@ -189,7 +189,7 @@ class AccountStore:
         token_hash = _token_hash(token)
         with closing(self._connect()) as conn, conn:
             row = conn.execute(
-                self._q("SELECT user_id, expires_at FROM tokens WHERE token_hash = ?"),
+                self._q("SELECT user_id, expires_at FROM assistant_tokens WHERE token_hash = ?"),
                 (token_hash,),
             ).fetchone()
             if row is None:
@@ -197,7 +197,7 @@ class AccountStore:
             user_id, expires_at = row
             if expires_at <= time.time():
                 conn.execute(
-                    self._q("DELETE FROM tokens WHERE token_hash = ?"), (token_hash,)
+                    self._q("DELETE FROM assistant_tokens WHERE token_hash = ?"), (token_hash,)
                 )
                 return None
             return int(user_id)
@@ -207,7 +207,7 @@ class AccountStore:
             return False
         with closing(self._connect()) as conn, conn:
             cursor = conn.execute(
-                self._q("DELETE FROM tokens WHERE token_hash = ?"),
+                self._q("DELETE FROM assistant_tokens WHERE token_hash = ?"),
                 (_token_hash(token),),
             )
             return cursor.rowcount > 0
@@ -215,7 +215,7 @@ class AccountStore:
     def delete_user(self, user_id: int) -> bool:
         with closing(self._connect()) as conn, conn:
             cursor = conn.execute(
-                self._q("DELETE FROM users WHERE id = ?"), (user_id,)
+                self._q("DELETE FROM assistant_users WHERE id = ?"), (user_id,)
             )
             return cursor.rowcount > 0
 
@@ -248,16 +248,16 @@ class PostgresAccountStore(AccountStore):
 
     def _schema(self) -> list[str]:
         return [
-            "CREATE TABLE IF NOT EXISTS users ("
+            "CREATE TABLE IF NOT EXISTS assistant_users ("
             "id SERIAL PRIMARY KEY, "
             "email TEXT NOT NULL UNIQUE, "
             "password_hash TEXT NOT NULL, "
             "salt TEXT NOT NULL, "
             "iterations INTEGER NOT NULL, "
             "created_at TEXT NOT NULL)",
-            "CREATE TABLE IF NOT EXISTS tokens ("
+            "CREATE TABLE IF NOT EXISTS assistant_tokens ("
             "token_hash TEXT PRIMARY KEY, "
-            "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
+            "user_id INTEGER NOT NULL REFERENCES assistant_users(id) ON DELETE CASCADE, "
             "expires_at DOUBLE PRECISION NOT NULL)",
         ]
 

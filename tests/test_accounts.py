@@ -66,7 +66,7 @@ def test_same_password_gets_different_hashes(store):
     store.create_user("rui@exemplo.com", PASSWORD)
     import sqlite3
     with sqlite3.connect(store.db_path) as conn:
-        rows = conn.execute("SELECT password_hash, salt FROM users").fetchall()
+        rows = conn.execute("SELECT password_hash, salt FROM assistant_users").fetchall()
     assert rows[0][0] != rows[1][0]
     assert rows[0][1] != rows[1][1]
 
