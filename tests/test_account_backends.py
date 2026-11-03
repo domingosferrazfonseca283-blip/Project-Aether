@@ -33,3 +33,11 @@ def test_factory_uses_postgres_when_database_url_is_set(monkeypatch):
         assert created["url"] == "postgresql://u:p@host/db"
     finally:
         accounts.get_account_store.cache_clear()
+
+
+def test_schemas_use_prefixed_table_names_only():
+    for store_class in (AccountStore, PostgresAccountStore):
+        sql = " ".join(store_class._schema(None))
+        assert "assistant_users" in sql and "assistant_tokens" in sql
+        assert " users" not in sql.replace("assistant_users", "")
+        assert " tokens" not in sql.replace("assistant_tokens", "")
