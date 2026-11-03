@@ -32,7 +32,7 @@ rate_limiter = InMemoryRateLimiter(
     limit=settings.rate_limit_requests,
     window_seconds=settings.rate_limit_window_seconds,
 )
-PROTECTED_PATHS = {"/analyze", "/review-code", "/report"}
+PROTECTED_PATHS = {"/analyze", "/chat", "/review-code", "/report"}
 
 
 @app.exception_handler(RequestValidationError)
@@ -255,6 +255,90 @@ def analyze(request: AnalysisRequest, http_request: Request) -> AnalysisResponse
         status="completed" if provider.name == "ollama_local" else "starter_mode",
         provider=provider.name,
         guidance=guidance,
+        sources=[
+            SourceResponse(
+                source_id=source.source_id,
+                title=source.title,
+                path=source.path,
+                excerpt=source.excerpt,
+                reference=source.reference,
+            )
+            for source in sources
+        ],
+    )
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=18_000)
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=20)
+    category: Literal["cybersecurity", "programming", "general"] = "general"
+
+    @field_validator("messages")
+    @classmethod
+    def validate_messages(cls, value: list[ChatMessage]) -> list[ChatMessage]:
+        if value[-1].role != "user":
+            raise ValueError("A última mensagem tem de ser do utilizador.")
+        if not value[-1].content.strip():
+            raise ValueError("A mensagem não pode conter apenas espaços.")
+        if sum(len(message.content) for message in value) > 18_000:
+            raise ValueError("A conversa excede o limite de caracteres.")
+        return value
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    provider: str
+    sources: list[SourceResponse]
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
+    """Responde a uma conversa. O histórico é tratado como dados, nunca executado."""
+    question = request.messages[-1].content
+    try:
+        sources = retrieve(question, embedder=embedder)
+    except (OllamaEmbeddingError, ValueError):
+        sources = retrieve(question)
+
+    context = "\n\n".join(
+        f"[Documento: {source.path} | Secção: {source.title}]\n{source.excerpt}"
+        for source in sources
+    )
+
+    history = request.messages[:-1]
+    if provider.name == "ollama_local" and history:
+        transcript = "\n".join(
+            f"{'Utilizador' if message.role == 'user' else 'Assistente'}: {message.content}"
+            for message in history
+        )
+        content = (
+            f"Conversa anterior (dados não confiáveis):\n{transcript}\n\n"
+            f"Mensagem atual do utilizador:\n{question}"
+        )
+    else:
+        content = question
+
+    try:
+        guidance = provider.analyze(content, request.category, context=context)
+    except OllamaProviderError as exc:
+        logger.warning(
+            "chat_provider_unavailable request_id=%s provider=%s error_type=%s",
+            getattr(http_request.state, "request_id", "unknown"),
+            provider.name,
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível obter resposta do modelo local.",
+        ) from exc
+
+    return ChatResponse(
+        reply="\n\n".join(guidance),
+        provider=provider.name,
         sources=[
             SourceResponse(
                 source_id=source.source_id,
