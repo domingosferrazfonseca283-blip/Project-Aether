@@ -70,7 +70,7 @@ def test_provider_chat_sends_built_messages_and_returns_answer(monkeypatch):
     ]
 
 
-def test_api_chat_passes_real_roles_to_provider_chat(monkeypatch):
+def test_api_chat_passes_real_roles_to_provider_chat(monkeypatch, api, auth_headers):
     class FakeChatProvider:
         name = "ollama_local"
 
@@ -86,7 +86,7 @@ def test_api_chat_passes_real_roles_to_provider_chat(monkeypatch):
 
     fake = FakeChatProvider()
     monkeypatch.setattr(main_module, "provider", fake)
-    response = client.post("/chat", json={"messages": HISTORY})
+    response = api.post("/chat", json={"messages": HISTORY}, headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json()["reply"] == "resposta de conversa"

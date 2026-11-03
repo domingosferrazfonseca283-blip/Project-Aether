@@ -7,7 +7,10 @@ def test_openapi_documents_expected_api_endpoints():
 
     assert schema["info"]["title"] == "Kamba API"
     assert schema["info"]["version"] == "0.6.0"
-    assert set(schema["paths"]) == {"/", "/health", "/analyze", "/chat", "/review-code", "/report"}
+    assert set(schema["paths"]) == {
+        "/", "/health", "/analyze", "/chat", "/review-code", "/report",
+        "/auth/register", "/auth/login", "/auth/logout", "/auth/account",
+    }
     assert "get" in schema["paths"]["/"]
     assert "get" in schema["paths"]["/health"]
     assert "post" in schema["paths"]["/analyze"]

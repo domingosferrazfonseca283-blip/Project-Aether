@@ -5,7 +5,7 @@ from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +15,14 @@ from app.analysis.static_review import review_code
 from app.ai import get_provider
 from app.ai.ollama_provider import OllamaProviderError
 from app.core.config import get_settings
+from app.core.accounts import (
+    AccountStore,
+    DuplicateEmailError,
+    InvalidCredentialsError,
+    InvalidEmailError,
+    InvalidPasswordError,
+    get_account_store,
+)
 from app.core.security import InMemoryRateLimiter, api_key_is_valid
 from app.rag.embeddings import OllamaEmbedder, OllamaEmbeddingError
 from app.rag.retriever import retrieve
@@ -32,7 +40,18 @@ rate_limiter = InMemoryRateLimiter(
     limit=settings.rate_limit_requests,
     window_seconds=settings.rate_limit_window_seconds,
 )
-PROTECTED_PATHS = {"/analyze", "/chat", "/review-code", "/report"}
+PROTECTED_PATHS = {"/analyze", "/review-code", "/report"}
+AUTH_RATE_LIMITED_PATHS = {"/auth/register", "/auth/login"}
+NO_STORE_PATHS = PROTECTED_PATHS | {
+    "/chat", "/auth/register", "/auth/login", "/auth/logout", "/auth/account",
+}
+auth_limiter = InMemoryRateLimiter(
+    limit=10, window_seconds=settings.rate_limit_window_seconds
+)
+chat_limiter = InMemoryRateLimiter(
+    limit=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+)
 
 
 @app.exception_handler(RequestValidationError)
@@ -58,6 +77,14 @@ async def request_observability(request, call_next):
     request.state.request_id = request_id
     started = perf_counter()
     response = None
+    if request.method == "POST" and request.url.path in AUTH_RATE_LIMITED_PATHS:
+        auth_client = request.client.host if request.client else "unknown"
+        if not auth_limiter.allow(auth_client):
+            response = JSONResponse(
+                status_code=429,
+                content={"detail": "Demasiadas tentativas. Tenta novamente mais tarde."},
+                headers={"Retry-After": str(settings.rate_limit_window_seconds)},
+            )
     if request.method == "POST" and request.url.path in PROTECTED_PATHS:
         # Limitar antes de autenticar também abranda tentativas com chaves inválidas.
         client_id = request.client.host if request.client else "unknown"
@@ -94,7 +121,7 @@ async def request_observability(request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    if request.url.path in PROTECTED_PATHS:
+    if request.url.path in NO_STORE_PATHS:
         response.headers["Cache-Control"] = "no-store"
 
     logger.info(
@@ -268,6 +295,112 @@ def analyze(request: AnalysisRequest, http_request: Request) -> AnalysisResponse
     )
 
 
+class RegisterRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=1, max_length=254)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_at: datetime
+
+
+def account_store() -> AccountStore:
+    return get_account_store()
+
+
+def _bearer_token(request: Request) -> str | None:
+    header = request.headers.get("Authorization", "")
+    scheme, _, token = header.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        return None
+    return token.strip()
+
+
+def current_user(
+    request: Request, store: AccountStore = Depends(account_store)
+) -> int:
+    user_id = store.user_for_token(_bearer_token(request))
+    if user_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Autenticação necessária.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user_id
+
+
+def chat_user(user_id: int = Depends(current_user)) -> int:
+    if not chat_limiter.allow(f"user:{user_id}"):
+        raise HTTPException(
+            status_code=429,
+            detail="Limite de pedidos excedido. Tenta novamente mais tarde.",
+            headers={"Retry-After": str(settings.rate_limit_window_seconds)},
+        )
+    return user_id
+
+
+def _token_response(store: AccountStore, user_id: int) -> TokenResponse:
+    token, expires_at = store.issue_token(user_id)
+    return TokenResponse(
+        access_token=token,
+        expires_at=datetime.fromtimestamp(expires_at, timezone.utc),
+    )
+
+
+@app.post("/auth/register", response_model=TokenResponse, status_code=201)
+def register(
+    request: RegisterRequest, store: AccountStore = Depends(account_store)
+) -> TokenResponse:
+    try:
+        user_id = store.create_user(request.email, request.password)
+    except DuplicateEmailError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (InvalidEmailError, InvalidPasswordError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _token_response(store, user_id)
+
+
+@app.post("/auth/login", response_model=TokenResponse)
+def login(
+    request: LoginRequest, store: AccountStore = Depends(account_store)
+) -> TokenResponse:
+    try:
+        user_id = store.authenticate(request.email, request.password)
+    except InvalidCredentialsError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=str(exc),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    return _token_response(store, user_id)
+
+
+@app.post("/auth/logout")
+def logout(
+    request: Request,
+    user_id: int = Depends(current_user),
+    store: AccountStore = Depends(account_store),
+) -> dict[str, str]:
+    store.revoke_token(_bearer_token(request))
+    return {"status": "ok"}
+
+
+@app.delete("/auth/account")
+def delete_account(
+    user_id: int = Depends(current_user),
+    store: AccountStore = Depends(account_store),
+) -> dict[str, str]:
+    store.delete_user(user_id)
+    return {"status": "deleted"}
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=18_000)
@@ -296,7 +429,11 @@ class ChatResponse(BaseModel):
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
+def chat(
+    request: ChatRequest,
+    http_request: Request,
+    user_id: int = Depends(chat_user),
+) -> ChatResponse:
     """Responde a uma conversa. O histórico é tratado como dados, nunca executado."""
     question = request.messages[-1].content
     try:
