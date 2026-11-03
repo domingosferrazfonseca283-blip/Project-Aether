@@ -323,7 +323,15 @@ def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
         content = question
 
     try:
-        guidance = provider.analyze(content, request.category, context=context)
+        chat_method = getattr(provider, "chat", None)
+        if callable(chat_method):
+            guidance = chat_method(
+                [{"role": m.role, "content": m.content} for m in request.messages],
+                request.category,
+                context=context,
+            )
+        else:
+            guidance = provider.analyze(content, request.category, context=context)
     except OllamaProviderError as exc:
         logger.warning(
             "chat_provider_unavailable request_id=%s provider=%s error_type=%s",
