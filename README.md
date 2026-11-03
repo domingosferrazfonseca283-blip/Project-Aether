@@ -94,6 +94,7 @@ Para ativar a autenticação da API, define `KAMBA_API_KEY` com uma chave aleat�
 - `GET /` — metadados do projeto.
 - `GET /health` — estado básico da API.
 - `GET /ui` — interface web.
+- `POST /chat` — recebe o histórico da conversa (`messages`, cada uma com `role` `user` ou `assistant`, no máximo 20 mensagens e 18 000 caracteres no total) e `category` opcional; devolve `reply`, `provider` e `sources`. A última mensagem tem de ser do utilizador. O conteúdo não é executado.
 - `POST /analyze` — recebe texto e categoria (`cybersecurity`, `programming` ou `general`) e devolve orientação e fontes recuperadas.
 - `POST /review-code` — recebe código como texto e devolve achados heurísticos estáticos; não executa código nem substitui ferramentas especializadas ou revisão humana.
 - `POST /report` — gera um relatório JSON da revisão estática, incluindo data, resumo, severidades, achados e limitações.

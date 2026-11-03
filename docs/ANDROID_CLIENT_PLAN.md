@@ -14,6 +14,7 @@ Aplicação Android
        └── API FastAPI Kamba
             ├── autenticação e rate limiting
             ├── /analyze
+            ├── /chat
             ├── /review-code
             ├── /report
             ├── provider rules ou Ollama
@@ -52,6 +53,27 @@ Resposta de sucesso (campos):
 - `guidance`: lista de textos
 - `sources`: lista de objetos com `source_id`, `title`, `path`, `excerpt` e `reference`
 
+### Chat
+
+`POST /chat`
+
+Pedido:
+
+```json
+{
+  "messages": [
+    {"role": "user", "content": "O que é o menor privilégio?"},
+    {"role": "assistant", "content": "É dar só as permissões necessárias."},
+    {"role": "user", "content": "Dá um exemplo numa API."}
+  ],
+  "category": "cybersecurity"
+}
+```
+
+`messages` aceita entre 1 e 20 mensagens (`role` `user` ou `assistant`) e a última tem de ser do utilizador. O total não pode exceder 18 000 caracteres. O cliente guarda o histórico e reenvia-o em cada pedido; o servidor não guarda conversas.
+
+Resposta de sucesso: `reply` (texto), `provider` e `sources` (mesmo formato do `/analyze`). Apresentar `reply` sempre como texto simples, nunca como HTML.
+
 ### Revisão estática
 
 `POST /review-code`
@@ -71,7 +93,7 @@ Devolve um relatório JSON com nome, data, modo de análise, resumo, limitaçõe
 ## Autenticação e transporte
 
 - Em produção, usar exclusivamente HTTPS com certificado válido. Não desativar validação TLS.
-- Se `KAMBA_API_KEY` estiver configurada no servidor, enviar `X-API-Key` em cada POST protegido (`/analyze`, `/review-code`, `/report`).
+- Se `KAMBA_API_KEY` estiver configurada no servidor, enviar `X-API-Key` em cada POST protegido (`/analyze`, `/chat`, `/review-code`, `/report`).
 - Nunca incluir uma chave de servidor fixa dentro do APK ou no repositório. Uma chave partilhada embutida numa aplicação pode ser extraída.
 - Para um serviço público, preferir autenticação por utilizador/dispositivo com credenciais de curta duração e revogáveis antes de distribuir a aplicação. A chave API atual é um controlo simples, não um sistema completo de identidade.
 - Não guardar pedidos ou respostas confidenciais em logs, analytics, notificações ou backups.
